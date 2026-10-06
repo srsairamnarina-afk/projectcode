@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge AI | Mock Interview</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/interview.css">
+  <script src="/js/nav.js"></script>
+</head>
+<body>
+<main class="interview-container">
+
+  <!-- SETUP PHASE -->
+  <div id="setupPhase" class="setup-card">
+    <div class="section-heading text-center" style="margin-top:0;">
+      <p class="eyebrow">PREPARATION</p>
+      <h2>AI Mock Interview Setup</h2>
+      <p class="subtitle">Configure your interview parameters based on your profile.</p>
+    </div>
+
+    <div style="background: rgba(37,99,235,0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+      <h4>Candidate: <span id="setupName">...</span></h4>
+      <p class="muted"><strong>Target Role:</strong> <span id="setupRole">...</span></p>
+      <p class="muted" style="font-size: 13px;"><strong>Identified Gaps:</strong> <span id="setupGaps">...</span></p>
+    </div>
+
+    <div class="grid two" style="margin-bottom: 25px;">
+      <div class="field">
+        <label>Interview Type</label>
+        <select id="selType">
+          <option value="Mixed">Mixed (Technical & HR)</option>
+          <option value="Technical">Technical Only</option>
+          <option value="Behavioral">Behavioral / HR Only</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Difficulty</label>
+        <select id="selDiff">
+          <option value="Intermediate">Intermediate</option>
+          <option value="Beginner">Beginner</option>
+          <option value="Advanced">Advanced</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Number of Questions</label>
+        <select id="selNum">
+          <option value="5">5 Questions (Short)</option>
+          <option value="10">10 Questions (Standard)</option>
+          <option value="15">15 Questions (Long)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="camera-preview-container">
+      <video id="setupVideo" autoplay muted playsinline></video>
+      <div id="camOverlay" style="position: absolute; color: white;">Requesting Camera Access...</div>
+    </div>
+
+    <div style="display: flex; gap: 15px; justify-content: center;">
+      <button class="btn outline-btn" id="btnTestMic">🎤 Test Mic</button>
+      <button class="btn primary btn-large" id="btnStart">Start Interview</button>
+    </div>
+    <div id="setupError" style="color: var(--danger); text-align: center; margin-top: 15px; display: none;"></div>
+  </div>
+
+  <!-- INTERVIEW PHASE -->
+  <div id="interviewPhase" class="interview-layout" style="display: none;">
+    <!-- LEFT: Candidate -->
+    <div class="video-panel">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+        <h3 style="margin:0;">Candidate Camera</h3>
+        <div style="display: flex; gap: 10px;">
+          <span class="status-badge active" id="badgeCam">📸 Cam ON</span>
+          <span class="status-badge" id="badgeMic">🎤 Mic OFF</span>
+        </div>
+      </div>
+      
+      <div class="camera-preview-container" style="flex-grow: 1;">
+        <video id="interviewVideo" autoplay muted playsinline></video>
+      </div>
+      
+      <button class="btn danger-btn full" id="btnEndEarly" style="margin-top: auto;">End Interview Early</button>
+    </div>
+
+    <!-- RIGHT: AI Interviewer -->
+    <div class="ai-panel">
+      <div class="ai-header">
+        <h3 style="margin:0; color: var(--primary);">🤖 AI Interviewer</h3>
+        <div>
+          <span style="font-weight: bold; margin-right: 15px;" id="timer">00:00</span>
+          <span class="badge tag" id="qProgress">Q 1 of 5</span>
+        </div>
+      </div>
+
+      <div class="ai-bubble" id="aiQuestion">
+        Loading interview environment...
+      </div>
+
+      <div style="margin-top: auto;">
+        <p style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">Your Answer:</p>
+        <textarea id="transcriptBox" class="transcript-area" placeholder="Click 'Start Speaking' and your words will appear here..."></textarea>
+        
+        <div class="controls">
+          <button class="btn outline-btn" id="btnSpeak" style="flex: 1;"><span id="speakIcon">🎤</span> <span id="speakText">Start Speaking</span></button>
+          <button class="btn primary" id="btnSubmitAnswer" style="flex: 1;" disabled>Submit Answer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT PHASE -->
+  <div id="reportPhase" style="display: none;">
+    <div class="section-heading text-center" style="margin-top:0;">
+      <p class="eyebrow">COMPLETED</p>
+      <h2 class="gradient-text">Interview Performance Report</h2>
+    </div>
+    <div id="reportContent"></div>
+    <div class="text-center" style="margin-top: 40px; display: flex; gap: 20px; justify-content: center;">
+      <a href="/learning-roadmap" class="btn primary btn-large">Continue Learning Roadmap</a>
+      <a href="/certifications" class="btn outline-btn btn-large">Explore Certifications</a>
+    </div>
+  </div>
+
+</main>
+
+<script src="/js/interview.js"></script>
+</body>
+</html>

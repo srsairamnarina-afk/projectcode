@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge AI | Skill Gap</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/nav.js"></script>
+</head>
+<body>
+<main class="results-page">
+  <div class="section-heading text-center" style="margin-top: 20px;">
+    <p class="eyebrow">STEP 1: ANALYSIS</p>
+    <h1 class="gradient-text">Skill Gap Analysis</h1>
+    <p class="subtitle">Comparing your profile to the requirements of <strong id="roleTitle">...</strong></p>
+  </div>
+
+  <section class="stats grid three">
+    <div class="stat-card glass-panel">
+      <span class="stat-icon">🎯</span>
+      <div>
+        <span>Skill Match</span>
+        <strong id="skillScore">0%</strong>
+      </div>
+    </div>
+    <div class="stat-card glass-panel">
+      <span class="stat-icon">👤</span>
+      <div>
+        <span>Profile Fit</span>
+        <strong id="similarityScore">0%</strong>
+      </div>
+    </div>
+    <div class="stat-card glass-panel danger-border">
+      <span class="stat-icon alert">⚠️</span>
+      <div>
+        <span>Missing Gaps</span>
+        <strong id="missingCount">0</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="result-grid">
+    <div class="result-card glass-panel">
+      <h2 class="card-title">✅ Acquired Skills</h2>
+      <p class="muted" style="margin-bottom: 20px;">Skills you already possess that match the target role.</p>
+      <div id="matchedSkills" class="chips"></div>
+    </div>
+
+    <div class="result-card glass-panel">
+      <h2 class="card-title">❌ Missing Skills</h2>
+      <p class="muted" style="margin-bottom: 20px;">Critical skills you need to learn to become job-ready.</p>
+      <div id="missingSkills" class="chips danger"></div>
+    </div>
+  </section>
+  
+  <div class="text-center" style="margin-top: 40px;">
+    <a href="/learning-roadmap" class="btn primary btn-large">View Learning Roadmap →</a>
+  </div>
+</main>
+
+<script>
+const data = JSON.parse(sessionStorage.getItem("skillbridgeResult") || "null");
+
+if (!data) {
+  window.location.href = "/skill-analyzer";
+}
+
+function chips(items, isDanger = false) {
+  if (!items || items.length === 0) return "<span class='muted'>None identified</span>";
+  return items.map(x => `<span class="chip ${isDanger ? 'danger-chip' : 'success-chip'}">${escapeHtml(x)}</span>`).join("");
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+document.getElementById("roleTitle").textContent = data.job_role;
+document.getElementById("skillScore").textContent = `${data.skill_score}%`;
+document.getElementById("similarityScore").textContent = `${data.similarity_score}%`;
+document.getElementById("missingCount").textContent = data.missing_skills.length;
+document.getElementById("matchedSkills").innerHTML = chips(data.matched_skills, false);
+document.getElementById("missingSkills").innerHTML = chips(data.missing_skills, true);
+</script>
+</body>
+</html>

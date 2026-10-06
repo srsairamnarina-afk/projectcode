@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge AI | Skill Analyzer</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/nav.js"></script>
+</head>
+<body>
+<main>
+<section id="analyzer" class="section">
+  <div class="section-heading text-center">
+    <p class="eyebrow">PROFILE ANALYZER</p>
+    <h2>AI Career Analysis</h2>
+    <p class="subtitle">Upload your resume. We'll automatically combine it with your saved profile.</p>
+  </div>
+
+  <form id="profileForm" class="form-card">
+    
+    <div style="background: rgba(37, 99, 235, 0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid var(--border-color);">
+      <h4><span id="p_name"></span>'s Profile Data</h4>
+      <p class="muted" style="margin-bottom: 5px; font-size: 14px;"><strong>Target Role:</strong> <span id="p_role">Not Set</span></p>
+      <p class="muted" style="font-size: 14px;"><strong>Current Skills:</strong> <span id="p_skills">None</span></p>
+      <a href="/profile" style="font-size: 13px; font-weight: bold; color: var(--primary);">Edit Profile</a>
+    </div>
+
+    <!-- Hidden fields to pass to backend -->
+    <input type="hidden" name="full_name" id="h_full_name">
+    <input type="hidden" name="education" id="h_education">
+    <input type="hidden" name="target_role" id="h_target_role">
+    <input type="hidden" name="experience" id="h_experience">
+    <input type="hidden" name="skills" id="h_skills">
+
+    <div class="upload-box" id="uploadBox">
+      <div class="upload-icon">📄</div>
+      <label for="resume"><strong>Upload Resume (Optional but Recommended)</strong></label>
+      <p>PDF or DOCX, maximum 5 MB.</p>
+      <input id="resume" name="resume" type="file" accept=".pdf,.docx">
+    </div>
+
+    <div class="field">
+      <label>Additional Resume / Profile Text</label>
+      <textarea name="resume_text" rows="4" placeholder="Paste additional text here if you want to add more context."></textarea>
+    </div>
+
+    <button class="btn primary full btn-large" type="submit">Run AI Analysis</button>
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div> Analyzing your profile and resume...
+    </div>
+    <div id="error" class="error hidden"></div>
+  </form>
+</section>
+</main>
+<footer>SkillBridge AI • Engineering Major Project</footer>
+
+<script>
+  // Load existing profile to pre-fill analyzer
+  document.addEventListener('DOMContentLoaded', () => {
+    const profile = JSON.parse(localStorage.getItem('sb_profile') || '{}');
+    
+    document.getElementById('p_name').textContent = profile.full_name || 'User';
+    document.getElementById('p_role').textContent = profile.target_role || 'Not Set';
+    document.getElementById('p_skills').textContent = profile.skills || 'None';
+
+    document.getElementById('h_full_name').value = profile.full_name || '';
+    document.getElementById('h_education').value = profile.degree ? `${profile.degree} ${profile.branch}` : '';
+    document.getElementById('h_target_role').value = profile.target_role || '';
+    document.getElementById('h_experience').value = profile.experience || 0;
+    document.getElementById('h_skills').value = profile.skills || '';
+  });
+
+  // Handle file select
+  document.getElementById('resume').addEventListener('change', function(e) {
+    if(e.target.files.length > 0) {
+      document.querySelector('.upload-box p').textContent = 'Selected: ' + e.target.files[0].name;
+      document.getElementById('uploadBox').classList.add('active');
+    }
+  });
+
+  // Form submission (copied from app.js)
+  const form = document.getElementById("profileForm");
+  const loading = document.getElementById("loading");
+  const errorBox = document.getElementById("error");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    
+    if(!document.getElementById('h_target_role').value) {
+      errorBox.textContent = "Please set a Target Job Role in your Profile first.";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+
+    loading.classList.remove("hidden");
+    errorBox.classList.add("hidden");
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to analyze profile.");
+      }
+
+      sessionStorage.setItem("skillbridgeResult", JSON.stringify(result));
+      window.location.href = "/skill-gap"; // Route directly to gap analysis
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.classList.remove("hidden");
+    } finally {
+      loading.classList.add("hidden");
+    }
+  });
+</script>
+</body>
+</html>

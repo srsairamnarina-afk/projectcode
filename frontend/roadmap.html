@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge AI | Learning Roadmap</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/nav.js"></script>
+</head>
+<body>
+<main class="results-page">
+  <div class="section-heading text-center" style="margin-top: 20px;">
+    <p class="eyebrow">STEP 2: PREPARATION</p>
+    <h1 class="gradient-text">Learning Roadmap</h1>
+    <p class="subtitle">Your personalized path to mastering the skills for <strong id="roleTitle">...</strong></p>
+  </div>
+
+  <section class="result-card glass-panel full-width">
+    <h2 class="card-title">🚀 Priority Action Plan</h2>
+    <p class="muted" style="margin-bottom: 20px;" id="guidanceSummary"></p>
+    <ol id="priority" class="action-list"></ol>
+  </section>
+
+  <section class="result-card glass-panel full-width">
+    <h2 class="card-title">📚 Recommended Learning Resources</h2>
+    <div id="resources" class="resource-grid"></div>
+  </section>
+
+  <div class="text-center" style="margin-top: 40px;">
+    <a href="/certifications" class="btn primary btn-large">View Recommended Certifications →</a>
+  </div>
+</main>
+
+<script>
+const data = JSON.parse(sessionStorage.getItem("skillbridgeResult") || "null");
+
+if (!data) {
+  window.location.href = "/skill-analyzer";
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+document.getElementById("roleTitle").textContent = data.job_role;
+document.getElementById("guidanceSummary").textContent = data.guidance.summary;
+
+document.getElementById("priority").innerHTML =
+  data.guidance.priority_order.map(x => `<li>${escapeHtml(x)}</li>`).join("");
+
+document.getElementById("resources").innerHTML =
+  data.learning_recommendations.map(r => `
+    <div class="resource-box">
+      <span class="badge tag">🏷️ ${escapeHtml(r.skill)}</span>
+      <h3>${escapeHtml(r.resource_name)}</h3>
+      <p class="provider">📺 ${escapeHtml(r.provider)} • ${escapeHtml(r.resource_type)}</p>
+      <a href="${r.url}" target="_blank" rel="noopener" class="btn outline-btn small-btn mt-auto">Start Learning</a>
+    </div>
+  `).join("") || "<p class='muted'>No learning resource mapped yet.</p>";
+</script>
+</body>
+</html>
