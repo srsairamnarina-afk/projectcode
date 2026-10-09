@@ -31,7 +31,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const modalViolationCount = document.getElementById("modalViolationCount");
 
     // State Variables
-    let stream = null;
+    let videoStream = null;
+    let audioStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
     let recognition = null;
     let isListening = false;
     let shouldBeListening = false;
@@ -53,11 +56,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const MAX_TAB_SWITCHES = 3;
     let lastTabSwitchTime = 0;
 
-    // 2. Camera Setup (Use audio: false to prevent OS mic lock with SpeechRecognition)
+    // 2. Camera Setup
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        document.getElementById("setupVideo").srcObject = stream;
-        document.getElementById("interviewVideo").srcObject = stream;
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        document.getElementById("setupVideo").srcObject = videoStream;
+        document.getElementById("interviewVideo").srcObject = videoStream;
         document.getElementById("camOverlay").style.display = "none";
         if (badgeCam) badgeCam.classList.add("active");
     } catch (err) {
@@ -65,13 +68,117 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("camOverlay").textContent = "Camera preview unavailable. You can still proceed with voice interview.";
     }
 
-    // 3. Speech Recognition Engine
+    // 3. Audio & Speech Recognition Engine Setup
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    function createRecognitionInstance() {
+    async function initAudioStream() {
+        if (!audioStream) {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {
+                console.warn("Microphone access error:", e);
+            }
+        }
+        return audioStream;
+    }
+
+    // Start Audio Recording with MediaRecorder (Guaranteed to work in Brave/Chrome/Edge/Firefox)
+    async function startMediaRecording() {
+        const stream = await initAudioStream();
+        if (!stream) return;
+
+        audioChunks = [];
+        try {
+            const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") 
+                ? "audio/webm;codecs=opus" 
+                : (MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4");
+            
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    audioChunks.push(e.data);
+                }
+            };
+            mediaRecorder.start(100);
+        } catch (err) {
+            console.warn("MediaRecorder start error:", err);
+        }
+    }
+
+    // Stop Media Recording and Transcribe via AI if Web Speech didn't capture text
+    async function stopMediaRecordingAndTranscribe() {
+        if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+
+        return new Promise((resolve) => {
+            mediaRecorder.onstop = async () => {
+                // If Web Speech API already transcribed the speech, we don't need backend fallback
+                if (transcriptBox.value.trim().length > 0) {
+                    resolve(transcriptBox.value.trim());
+                    return;
+                }
+
+                if (audioChunks.length === 0) {
+                    resolve("");
+                    return;
+                }
+
+                const mimeType = mediaRecorder.mimeType || "audio/webm";
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                
+                if (audioBlob.size < 1000) {
+                    resolve("");
+                    return;
+                }
+
+                // Show processing indicator
+                const origStatus = speechLiveStatus ? speechLiveStatus.innerHTML : "";
+                if (speechLiveStatus) {
+                    speechLiveStatus.innerHTML = `<div class="speech-wave"><span></span><span></span><span></span></div> <span>Transcribing voice with AI...</span>`;
+                    speechLiveStatus.style.display = "flex";
+                }
+
+                try {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = async () => {
+                        const base64Audio = reader.result;
+                        try {
+                            const res = await fetch("/api/interview/transcribe", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ audio_data: base64Audio, mime_type: mimeType })
+                            });
+                            const data = await res.json();
+                            if (data.transcript && data.transcript.trim()) {
+                                transcriptBox.value = data.transcript.trim();
+                                baseTranscript = data.transcript.trim();
+                                btnSubmitAnswer.disabled = false;
+                                if (btnRespeak) btnRespeak.style.display = "inline-block";
+                            }
+                        } catch (apiErr) {
+                            console.warn("AI Transcribe API error:", apiErr);
+                        } finally {
+                            if (speechLiveStatus) speechLiveStatus.style.display = "none";
+                            resolve(transcriptBox.value.trim());
+                        }
+                    };
+                } catch (e) {
+                    if (speechLiveStatus) speechLiveStatus.style.display = "none";
+                    resolve("");
+                }
+            };
+
+            try {
+                mediaRecorder.stop();
+            } catch (e) {
+                resolve("");
+            }
+        });
+    }
+
+    function createWebSpeechInstance() {
         if (!SpeechRecognition) return null;
         
-        // Clean up previous instance
         if (recognition) {
             try { recognition.abort(); } catch (e) {}
             recognition = null;
@@ -116,26 +223,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
 
         rec.onerror = (event) => {
-            console.warn("Speech recognition event:", event.error);
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                shouldBeListening = false;
-                isListening = false;
-                updateMicState(false);
-                alert("Microphone permission was denied. Please allow microphone access in your browser address bar.");
-            }
+            console.warn("Web Speech event note:", event.error);
         };
 
         rec.onend = () => {
             isListening = false;
-            // Auto-reconnect if user/system still wants to listen during active interview
             if (shouldBeListening && interviewPhase.style.display !== "none") {
                 setTimeout(() => {
                     if (shouldBeListening && interviewPhase.style.display !== "none") {
                         try {
                             rec.start();
                         } catch (e) {
-                            // Retry with a fresh instance if needed
-                            recognition = createRecognitionInstance();
+                            recognition = createWebSpeechInstance();
                             if (recognition) {
                                 try { recognition.start(); } catch (err) {}
                             }
@@ -150,27 +249,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         return rec;
     }
 
-    function startListening() {
-        if (!SpeechRecognition) {
-            alert("Speech recognition is not supported in this browser. Please use Google Chrome, Edge, or Brave.");
-            return;
-        }
-
-        // Stop any active AI speech before candidate speaks
+    async function startListening() {
         stopAISpeech();
-
         shouldBeListening = true;
-        recognition = createRecognitionInstance();
+
+        // 1. Start Native MediaRecorder (Local Microphone Stream)
+        await startMediaRecording();
+
+        // 2. Start Web Speech API for real-time live preview
+        recognition = createWebSpeechInstance();
         if (recognition) {
             try {
                 recognition.start();
-            } catch (e) {
-                console.warn("Could not start recognition:", e);
-            }
+            } catch (e) {}
         }
+        updateMicState(true);
     }
 
-    function stopListening() {
+    async function stopListening() {
         shouldBeListening = false;
         if (recognition) {
             try {
@@ -179,6 +275,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         isListening = false;
         updateMicState(false);
+
+        // Process audio and transcribe if needed
+        await stopMediaRecordingAndTranscribe();
     }
 
     function updateMicState(active) {
@@ -207,16 +306,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // Mic Toggle Event
+    // Mic Toggle Button
     btnSpeak.addEventListener("click", () => {
-        if (shouldBeListening) {
+        if (shouldBeListening || isListening) {
             stopListening();
         } else {
             startListening();
         }
     });
 
-    // Re-speak Event
+    // Re-speak Button
     if (btnRespeak) {
         btnRespeak.addEventListener("click", () => {
             stopListening();
@@ -232,49 +331,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 4. Mic Test Feature in Setup Phase
     if (btnTestMic) {
         let isTesting = false;
-        btnTestMic.addEventListener("click", () => {
-            if (!SpeechRecognition) {
-                alert("Speech recognition is not supported in this browser.");
-                return;
-            }
+        btnTestMic.addEventListener("click", async () => {
             if (isTesting) return;
             isTesting = true;
             btnTestMic.textContent = "🎙️ Speak now (testing 5s)...";
             btnTestMic.classList.add("primary");
 
-            let heardWords = "";
-            const testRec = new SpeechRecognition();
-            testRec.lang = 'en-US';
-            testRec.onresult = (ev) => {
-                heardWords = ev.results[0][0].transcript;
-            };
-            testRec.onend = () => {
+            const stream = await initAudioStream();
+            if (!stream) {
                 isTesting = false;
                 btnTestMic.classList.remove("primary");
-                if (heardWords) {
-                    btnTestMic.textContent = "✅ Mic Working!";
-                    alert(`Microphone test passed! Detected speech: "${heardWords}"`);
-                } else {
-                    btnTestMic.textContent = "🎤 Test Mic Again";
-                    alert("Microphone active! No speech detected, but your mic is ready for the interview.");
-                }
-            };
-            testRec.onerror = (err) => {
-                isTesting = false;
-                btnTestMic.classList.remove("primary");
-                btnTestMic.textContent = "⚠️ Mic Test Failed";
+                btnTestMic.textContent = "⚠️ Mic Access Denied";
                 alert("Microphone permission needed. Please allow microphone in your browser settings.");
-            };
-            try {
-                testRec.start();
-            } catch (err) {
-                isTesting = false;
-                btnTestMic.classList.remove("primary");
+                return;
+            }
+
+            let heardWords = "";
+            const testRec = createWebSpeechInstance();
+            if (testRec) {
+                testRec.onresult = (ev) => {
+                    heardWords = ev.results[0][0].transcript;
+                };
+                testRec.onend = () => {
+                    isTesting = false;
+                    btnTestMic.classList.remove("primary");
+                    if (heardWords) {
+                        btnTestMic.textContent = "✅ Mic Working!";
+                        alert(`Microphone test passed! Detected speech: "${heardWords}"`);
+                    } else {
+                        btnTestMic.textContent = "✅ Mic Active";
+                        alert("Microphone active and ready for your mock interview!");
+                    }
+                };
+                try { testRec.start(); } catch (e) {}
+            } else {
+                setTimeout(() => {
+                    isTesting = false;
+                    btnTestMic.classList.remove("primary");
+                    btnTestMic.textContent = "✅ Mic Ready";
+                    alert("Microphone stream connected successfully!");
+                }, 3000);
             }
         });
     }
 
-    // 5. AI Text-To-Speech (AI Speaking Questions Aloud)
+    // 5. Female Voice AI Text-To-Speech (Sarah)
     if (btnToggleVoice) {
         btnToggleVoice.addEventListener("click", () => {
             aiVoiceEnabled = !aiVoiceEnabled;
@@ -308,12 +409,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        utterance.rate = 0.95;
+        utterance.pitch = 1.25; // Warm, friendly female voice tone
 
+        // Select Female English Voice (e.g., Zira, Samantha, Victoria, Google UK Female, etc.)
         const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("David") || v.name.includes("Zira")));
-        if (preferredVoice) utterance.voice = preferredVoice;
+        const femaleVoice = voices.find(v => 
+            v.lang.startsWith("en") && (
+                v.name.toLowerCase().includes("zira") ||
+                v.name.toLowerCase().includes("female") ||
+                v.name.toLowerCase().includes("samantha") ||
+                v.name.toLowerCase().includes("victoria") ||
+                v.name.toLowerCase().includes("karen") ||
+                v.name.toLowerCase().includes("moira") ||
+                v.name.toLowerCase().includes("fiona") ||
+                v.name.toLowerCase().includes("jenny") ||
+                v.name.toLowerCase().includes("aria") ||
+                v.name.toLowerCase().includes("serena") ||
+                v.name.toLowerCase().includes("ava") ||
+                v.name.toLowerCase().includes("emma")
+            )
+        ) || voices.find(v => v.lang.startsWith("en") && !v.name.toLowerCase().includes("david") && !v.name.toLowerCase().includes("male") && !v.name.toLowerCase().includes("george"));
+
+        if (femaleVoice) {
+            utterance.voice = femaleVoice;
+        }
 
         utterance.onend = () => {
             if (onComplete) onComplete();
@@ -432,7 +552,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         interviewPhase.style.display = "grid";
         startTimer();
         updateProgress();
-        startProctoring(); // Enable proctoring strictly for this interview session
+        startProctoring();
 
         try {
             const res = await fetch("/api/interview/start", {
@@ -448,7 +568,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             conversationHistory.push({ role: "assistant", content: data.reply });
             typeWriter("aiQuestion", data.reply);
             
-            // AI speaks the question, and automatically arms the mic when finished!
+            // Sarah speaks the question aloud, then turns on mic automatically
             speakAI(data.reply, () => {
                 startListening();
             });
@@ -468,7 +588,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 8. Submit Voice Answer
     btnSubmitAnswer.addEventListener("click", async () => {
-        stopListening();
+        await stopListening();
         stopAISpeech();
         
         const answer = transcriptBox.value.trim();
@@ -481,7 +601,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         interimTranscript = "";
         
         conversationHistory.push({ role: "user", content: answer });
-        document.getElementById("aiQuestion").innerHTML = "<div class='spinner' style='width:20px;height:20px;'></div> AI is evaluating your reply and preparing the next question...";
+        document.getElementById("aiQuestion").innerHTML = "<div class='spinner' style='width:20px;height:20px;'></div> Sarah is evaluating your reply and preparing the next question...";
 
         try {
             const res = await fetch("/api/interview/message", {
@@ -499,7 +619,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             conversationHistory.push({ role: "assistant", content: data.reply });
             typeWriter("aiQuestion", data.reply);
             
-            // AI speaks response, then auto-activates mic for next reply
+            // Sarah speaks follow-up question, then mic starts listening automatically
             speakAI(data.reply, () => {
                 startListening();
             });
@@ -520,16 +640,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     async function generateReport() {
-        stopProctoring(); // Disable tab restriction as session finishes
+        stopProctoring();
         stopAISpeech();
-        stopListening();
+        await stopListening();
 
         interviewPhase.style.display = "none";
         reportPhase.style.display = "block";
         clearInterval(timerInterval);
         
-        if (stream) {
-            stream.getTracks().forEach(t => t.stop());
+        if (videoStream) {
+            videoStream.getTracks().forEach(t => t.stop());
+        }
+        if (audioStream) {
+            audioStream.getTracks().forEach(t => t.stop());
         }
 
         document.getElementById("reportContent").innerHTML = `

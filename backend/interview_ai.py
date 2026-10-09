@@ -209,6 +209,70 @@ def evaluate_interview(system_prompt, conversation_history):
     except Exception as e:
         return {"error": f"Failed to parse AI evaluation as JSON: {str(e)}\nRaw response: {resp.get('reply')}"}
 
+def transcribe_audio(audio_base64, mime_type="audio/webm"):
+    """
+    Transcribes spoken audio recorded by browser using Gemini multimodal audio capabilities.
+    Works across all browsers (Brave, Chrome, Firefox, Safari, Edge) without requiring Google speech cloud web sockets.
+    """
+    if not GEMINI_API_KEY:
+        return {"error": "GEMINI_API_KEY is not configured."}
+        
+    candidate_models = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+    
+    # Strip data URL prefix if present
+    if "," in audio_base64:
+        audio_base64 = audio_base64.split(",", 1)[1]
+    
+    clean_mime = mime_type.split(";")[0].strip() if mime_type else "audio/webm"
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": clean_mime,
+                            "data": audio_base64
+                        }
+                    },
+                    {
+                        "text": "Transcribe the candidate's speech from this audio recording accurately and verbatim. Return ONLY the transcribed text. Do not add timestamps, commentary, conversational remarks, or markdown quotes."
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.1,
+            "maxOutputTokens": 800
+        }
+    }
+    
+    data = json.dumps(payload).encode("utf-8")
+    last_error = None
+    
+    for model_name in candidate_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        
+        try:
+            with urllib.request.urlopen(req) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                if "candidates" in result and len(result["candidates"]) > 0:
+                    text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    return {"transcript": text}
+                else:
+                    return {"transcript": ""}
+        except urllib.error.HTTPError as e:
+            err_msg = e.read().decode("utf-8")
+            last_error = f"AI API Error: {e.code} - {err_msg}"
+            if e.code in (503, 429, 404):
+                continue
+            return {"error": last_error}
+        except Exception as e:
+            return {"error": f"Failed to transcribe: {str(e)}"}
+            
+    return {"error": last_error or "Transcription service temporarily unavailable."}
+
 def build_system_prompt(data):
     role = data.get("target_role", "Software Professional")
     skills = ", ".join(data.get("matched_skills", []))
@@ -218,22 +282,23 @@ def build_system_prompt(data):
     num_questions = data.get("num_questions", 5)
     
     prompt = (
-        f"You are an expert, professional technical interviewer for the role of {role}.\n"
+        f"You are Sarah, an expert, professional female technical interviewer and career coach for the role of {role}.\n"
+        f"Your name is Sarah. In Phase 1 (Welcome), warmly introduce yourself as Sarah.\n"
         f"You are conducting a {difficulty} level {interview_type} interview.\n"
         f"The candidate's acquired skills: {skills}.\n"
         f"The candidate's identified skill gaps (needs improvement): {gaps}.\n\n"
         "STRICT INTERVIEW STRUCTURE:\n"
         f"This interview will consist of exactly {num_questions} main questions, plus occasional follow-ups.\n"
-        "Phase 1: Welcome - Greet the candidate and briefly explain the format.\n"
-        "Phase 2: Introduction - Ask them to introduce themselves.\n"
-        "Phase 3: Background - Ask about their acquired skills and projects.\n"
-        "Phase 4: Core Interview - Ask technical/behavioral questions relevant to their target role. Test their knowledge, including touching on their skill gaps to see if they've improved.\n"
-        "Phase 5: Follow-ups - If an answer is weak, ask a clarifying follow-up before moving to a new topic.\n"
+        "Phase 1: Welcome - Greet the candidate, introduce yourself as Sarah, and briefly explain the format.\n"
+        "Phase 2: Introduction - Ask them to introduce themselves and their journey.\n"
+        "Phase 3: Background - Ask about their acquired skills and relevant projects.\n"
+        "Phase 4: Core Interview - Ask technical and behavioral questions relevant to their target role. Test their knowledge, including touching on their skill gaps to see if they've improved.\n"
+        "Phase 5: Follow-ups - If an answer is brief or weak, ask a clarifying follow-up before moving to a new topic.\n"
         "Phase 6: Candidate Questions - Ask if they have any questions for you.\n"
-        "Phase 7: Closing - Formally end the interview.\n\n"
+        "Phase 7: Closing - Formally thank the candidate and end the interview.\n\n"
         "RULES:\n"
         "1. NEVER give the answers away.\n"
-        "2. Do NOT break character. You are the interviewer.\n"
+        "2. Do NOT break character. You are Sarah, the interviewer.\n"
         "3. Keep your responses concise (1-2 paragraphs max).\n"
         "4. Ask exactly one question at a time.\n"
         "5. Respond naturally to the candidate's answers."

@@ -166,5 +166,20 @@ def interview_evaluate_api():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/interview/transcribe", methods=["POST"])
+def interview_transcribe_api():
+    try:
+        data = request.json or {}
+        audio_data = data.get("audio_data")
+        mime_type = data.get("mime_type", "audio/webm")
+        if not audio_data:
+            return jsonify({"error": "No audio data provided"}), 400
+        result = interview_ai.transcribe_audio(audio_data, mime_type)
+        if "error" in result:
+            return jsonify({"error": result["error"]}), 503
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
