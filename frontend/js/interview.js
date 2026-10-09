@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Setup UI elements
+    // 1. Setup UI Elements
     const setupPhase = document.getElementById("setupPhase");
     const interviewPhase = document.getElementById("interviewPhase");
     const reportPhase = document.getElementById("reportPhase");
@@ -13,15 +13,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     const gaps = resultData.missing_skills ? resultData.missing_skills.join(", ") : "None available";
     document.getElementById("setupGaps").textContent = gaps;
 
-    // Stream & Audio State
+    // UI Controls
+    const btnStart = document.getElementById("btnStart");
+    const btnSpeak = document.getElementById("btnSpeak");
+    const btnRespeak = document.getElementById("btnRespeak");
+    const btnSubmitAnswer = document.getElementById("btnSubmitAnswer");
+    const btnEndEarly = document.getElementById("btnEndEarly");
+    const btnTestMic = document.getElementById("btnTestMic");
+    const btnToggleVoice = document.getElementById("btnToggleVoice");
+    const transcriptBox = document.getElementById("transcriptBox");
+    const speechLiveStatus = document.getElementById("speechLiveStatus");
+    const badgeMic = document.getElementById("badgeMic");
+    const badgeCam = document.getElementById("badgeCam");
+    const badgeProctor = document.getElementById("badgeProctor");
+    const tabWarningModal = document.getElementById("tabWarningModal");
+    const btnDismissWarning = document.getElementById("btnDismissWarning");
+    const modalViolationCount = document.getElementById("modalViolationCount");
+
+    // State Variables
     let stream = null;
     let recognition = null;
-    let isRecording = false;
-    let shouldBeRecording = false;
-    let timerInterval = null;
-    let seconds = 0;
+    let isListening = false;
+    let shouldBeListening = false;
     let aiVoiceEnabled = true;
     let baseTranscript = "";
+    let interimTranscript = "";
+    let timerInterval = null;
+    let seconds = 0;
     
     // Interview State
     let systemPrompt = "";
@@ -29,96 +47,194 @@ document.addEventListener("DOMContentLoaded", async () => {
     let currentQ = 1;
     let maxQ = 5;
 
-    // Proctoring / Tab-Switch State (Active ONLY during mock interview)
+    // Proctoring State (Active ONLY during mock interview)
     let proctoringActive = false;
     let tabSwitchCount = 0;
     const MAX_TAB_SWITCHES = 3;
     let lastTabSwitchTime = 0;
 
-    // 2. Camera Setup
+    // 2. Camera Setup (Use audio: false to prevent OS mic lock with SpeechRecognition)
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         document.getElementById("setupVideo").srcObject = stream;
         document.getElementById("interviewVideo").srcObject = stream;
         document.getElementById("camOverlay").style.display = "none";
+        if (badgeCam) badgeCam.classList.add("active");
     } catch (err) {
-        document.getElementById("camOverlay").textContent = "Camera/Mic access denied. Please allow permissions.";
-        document.getElementById("setupError").textContent = "You must allow Camera & Microphone access to conduct a mock interview.";
-        document.getElementById("setupError").style.display = "block";
+        console.warn("Camera access note:", err);
+        document.getElementById("camOverlay").textContent = "Camera preview unavailable. You can still proceed with voice interview.";
     }
 
-    // 3. Speech Recognition Setup
+    // 3. Speech Recognition Engine
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
+
+    function createRecognitionInstance() {
+        if (!SpeechRecognition) return null;
         
-        recognition.onstart = () => {
-            isRecording = true;
-            updateMicUI(true);
+        // Clean up previous instance
+        if (recognition) {
+            try { recognition.abort(); } catch (e) {}
+            recognition = null;
+        }
+
+        const rec = new SpeechRecognition();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = 'en-US';
+
+        rec.onstart = () => {
+            isListening = true;
+            updateMicState(true);
         };
 
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-            let finalTranscript = '';
+        rec.onresult = (event) => {
+            let finalPiece = '';
+            let currentInterim = '';
 
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const transcriptPiece = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcriptPiece;
+                const item = event.results[i];
+                if (item.isFinal) {
+                    finalPiece += item[0].transcript;
                 } else {
-                    interimTranscript += transcriptPiece;
+                    currentInterim += item[0].transcript;
                 }
             }
 
-            if (finalTranscript) {
-                baseTranscript += (baseTranscript ? " " : "") + finalTranscript.trim();
+            if (finalPiece) {
+                baseTranscript += (baseTranscript ? " " : "") + finalPiece.trim();
             }
+            interimTranscript = currentInterim;
 
-            const currentDisplay = baseTranscript + (interimTranscript ? (baseTranscript ? " " : "") + interimTranscript : "");
-            document.getElementById("transcriptBox").value = currentDisplay;
+            const fullText = baseTranscript + (interimTranscript ? (baseTranscript ? " " : "") + interimTranscript : "");
+            transcriptBox.value = fullText;
+            transcriptBox.scrollTop = transcriptBox.scrollHeight;
 
-            if (currentDisplay.trim().length > 0) {
-                document.getElementById("btnSubmitAnswer").disabled = false;
-            }
-        };
-
-        recognition.onerror = (e) => {
-            console.warn("Speech recognition warning:", e.error);
-            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-                shouldBeRecording = false;
-                isRecording = false;
-                updateMicUI(false);
-                alert("Microphone or speech service permission denied. You can type your answers directly.");
+            if (fullText.trim().length > 0) {
+                btnSubmitAnswer.disabled = false;
+                if (btnRespeak) btnRespeak.style.display = "inline-block";
             }
         };
 
-        recognition.onend = () => {
-            isRecording = false;
-            // Auto-restart if user still has mic toggled ON (prevents silence timeouts)
-            if (shouldBeRecording && interviewPhase.style.display !== "none") {
-                try {
-                    recognition.start();
-                } catch (err) {
-                    // Ignore if already active
-                }
+        rec.onerror = (event) => {
+            console.warn("Speech recognition event:", event.error);
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                shouldBeListening = false;
+                isListening = false;
+                updateMicState(false);
+                alert("Microphone permission was denied. Please allow microphone access in your browser address bar.");
+            }
+        };
+
+        rec.onend = () => {
+            isListening = false;
+            // Auto-reconnect if user/system still wants to listen during active interview
+            if (shouldBeListening && interviewPhase.style.display !== "none") {
+                setTimeout(() => {
+                    if (shouldBeListening && interviewPhase.style.display !== "none") {
+                        try {
+                            rec.start();
+                        } catch (e) {
+                            // Retry with a fresh instance if needed
+                            recognition = createRecognitionInstance();
+                            if (recognition) {
+                                try { recognition.start(); } catch (err) {}
+                            }
+                        }
+                    }
+                }, 100);
             } else {
-                updateMicUI(false);
+                updateMicState(false);
             }
         };
-    } else {
-        console.warn("SpeechRecognition API not available in this browser.");
+
+        return rec;
     }
 
-    // 4. Test Mic Button on Setup Phase
-    const btnTestMic = document.getElementById("btnTestMic");
+    function startListening() {
+        if (!SpeechRecognition) {
+            alert("Speech recognition is not supported in this browser. Please use Google Chrome, Edge, or Brave.");
+            return;
+        }
+
+        // Stop any active AI speech before candidate speaks
+        stopAISpeech();
+
+        shouldBeListening = true;
+        recognition = createRecognitionInstance();
+        if (recognition) {
+            try {
+                recognition.start();
+            } catch (e) {
+                console.warn("Could not start recognition:", e);
+            }
+        }
+    }
+
+    function stopListening() {
+        shouldBeListening = false;
+        if (recognition) {
+            try {
+                recognition.stop();
+            } catch (e) {}
+        }
+        isListening = false;
+        updateMicState(false);
+    }
+
+    function updateMicState(active) {
+        if (active) {
+            btnSpeak.innerHTML = `<span class="recording-indicator"></span> ⏹️ Done Speaking`;
+            btnSpeak.classList.add("primary");
+            btnSpeak.classList.remove("outline-btn");
+            if (badgeMic) {
+                badgeMic.classList.add("active");
+                badgeMic.textContent = "🎤 Mic ON (Listening...)";
+            }
+            if (speechLiveStatus) speechLiveStatus.style.display = "flex";
+        } else {
+            btnSpeak.innerHTML = `<span id="speakIcon">🎤</span> <span id="speakText">Speak Answer</span>`;
+            btnSpeak.classList.remove("primary");
+            btnSpeak.classList.add("outline-btn");
+            if (badgeMic) {
+                badgeMic.classList.remove("active");
+                badgeMic.textContent = "🎤 Mic OFF";
+            }
+            if (speechLiveStatus) speechLiveStatus.style.display = "none";
+            if (transcriptBox.value.trim().length > 0) {
+                btnSubmitAnswer.disabled = false;
+                if (btnRespeak) btnRespeak.style.display = "inline-block";
+            }
+        }
+    }
+
+    // Mic Toggle Event
+    btnSpeak.addEventListener("click", () => {
+        if (shouldBeListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
+    });
+
+    // Re-speak Event
+    if (btnRespeak) {
+        btnRespeak.addEventListener("click", () => {
+            stopListening();
+            transcriptBox.value = "";
+            baseTranscript = "";
+            interimTranscript = "";
+            btnSubmitAnswer.disabled = true;
+            btnRespeak.style.display = "none";
+            startListening();
+        });
+    }
+
+    // 4. Mic Test Feature in Setup Phase
     if (btnTestMic) {
         let isTesting = false;
         btnTestMic.addEventListener("click", () => {
-            if (!recognition) {
-                alert("Speech recognition is not supported in this browser. You can type answers during the interview.");
+            if (!SpeechRecognition) {
+                alert("Speech recognition is not supported in this browser.");
                 return;
             }
             if (isTesting) return;
@@ -137,78 +253,28 @@ document.addEventListener("DOMContentLoaded", async () => {
                 btnTestMic.classList.remove("primary");
                 if (heardWords) {
                     btnTestMic.textContent = "✅ Mic Working!";
-                    alert(`Microphone test passed! Heard: "${heardWords}"`);
+                    alert(`Microphone test passed! Detected speech: "${heardWords}"`);
                 } else {
                     btnTestMic.textContent = "🎤 Test Mic Again";
-                    alert("Microphone active! No speech detected, but your mic is ready.");
+                    alert("Microphone active! No speech detected, but your mic is ready for the interview.");
                 }
             };
             testRec.onerror = (err) => {
                 isTesting = false;
                 btnTestMic.classList.remove("primary");
                 btnTestMic.textContent = "⚠️ Mic Test Failed";
-                alert("Mic permission needed. Please allow microphone in browser settings or type answers.");
+                alert("Microphone permission needed. Please allow microphone in your browser settings.");
             };
-            testRec.start();
+            try {
+                testRec.start();
+            } catch (err) {
+                isTesting = false;
+                btnTestMic.classList.remove("primary");
+            }
         });
     }
 
-    // 5. Speak / Mic Toggle Button
-    const btnSpeak = document.getElementById("btnSpeak");
-    btnSpeak.addEventListener("click", () => {
-        if (!recognition) {
-            alert("Speech recognition is not supported on this browser. Please type your answer.");
-            return;
-        }
-        if (shouldBeRecording) {
-            toggleMic(false);
-        } else {
-            toggleMic(true);
-        }
-    });
-
-    function toggleMic(start) {
-        shouldBeRecording = start;
-        if (start) {
-            // Cancel any AI TTS when candidate speaks
-            stopAISpeech();
-            baseTranscript = document.getElementById("transcriptBox").value.trim();
-            try {
-                recognition.start();
-            } catch (e) {
-                // Already started or busy
-            }
-        } else {
-            try {
-                recognition.stop();
-            } catch (e) {
-                // Already stopped
-            }
-            updateMicUI(false);
-        }
-    }
-
-    function updateMicUI(active) {
-        const badge = document.getElementById("badgeMic");
-        const liveStatus = document.getElementById("speechLiveStatus");
-        if (active) {
-            btnSpeak.innerHTML = `<span class="recording-indicator"></span> Stop Speaking`;
-            badge.classList.add("active");
-            badge.textContent = "🎤 Mic ON";
-            if (liveStatus) liveStatus.style.display = "flex";
-        } else {
-            btnSpeak.innerHTML = `<span id="speakIcon">🎤</span> <span id="speakText">Start Speaking</span>`;
-            badge.classList.remove("active");
-            badge.textContent = "🎤 Mic OFF";
-            if (liveStatus) liveStatus.style.display = "none";
-            if (document.getElementById("transcriptBox").value.trim().length > 0) {
-                document.getElementById("btnSubmitAnswer").disabled = false;
-            }
-        }
-    }
-
-    // 6. AI Text-To-Speech (AI Speaking Out Loud)
-    const btnToggleVoice = document.getElementById("btnToggleVoice");
+    // 5. AI Text-To-Speech (AI Speaking Questions Aloud)
     if (btnToggleVoice) {
         btnToggleVoice.addEventListener("click", () => {
             aiVoiceEnabled = !aiVoiceEnabled;
@@ -223,26 +289,39 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    function speakAI(text) {
-        if (!aiVoiceEnabled || !('speechSynthesis' in window)) return;
+    function speakAI(text, onComplete) {
+        if (!aiVoiceEnabled || !('speechSynthesis' in window)) {
+            if (onComplete) onComplete();
+            return;
+        }
         stopAISpeech();
 
-        // Clean text for natural speech (remove markdown formatting)
+        // Clean text for natural speech
         const cleanText = text
             .replace(/[*#_`~>]/g, '')
             .replace(/Phase \d+:/gi, '')
             .trim();
 
-        if (!cleanText) return;
+        if (!cleanText) {
+            if (onComplete) onComplete();
+            return;
+        }
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
 
-        // Pick preferred English voice if available
         const voices = window.speechSynthesis.getVoices();
         const preferredVoice = voices.find(v => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("David") || v.name.includes("Zira")));
         if (preferredVoice) utterance.voice = preferredVoice;
+
+        utterance.onend = () => {
+            if (onComplete) onComplete();
+        };
+
+        utterance.onerror = () => {
+            if (onComplete) onComplete();
+        };
 
         window.speechSynthesis.speak(utterance);
     }
@@ -253,7 +332,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // 7. Proctoring / Tab Switch Restriction (STRICTLY during active mock interview only)
+    // 6. Proctoring & Tab Switch Restriction (Active ONLY during mock interview)
     function startProctoring() {
         proctoringActive = true;
         tabSwitchCount = 0;
@@ -263,7 +342,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         window.addEventListener("blur", handleTabSwitch);
         window.addEventListener("beforeunload", handleBeforeUnload);
 
-        // Intercept in-app navigation during interview
         document.querySelectorAll("header.navbar a, nav a").forEach(link => {
             link.addEventListener("click", handleNavIntercept);
         });
@@ -279,14 +357,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             link.removeEventListener("click", handleNavIntercept);
         });
 
-        const modal = document.getElementById("tabWarningModal");
-        if (modal) modal.style.display = "none";
+        if (tabWarningModal) tabWarningModal.style.display = "none";
     }
 
     function handleTabSwitch() {
         if (!proctoringActive || interviewPhase.style.display === "none") return;
         
-        // Debounce multiple events within 1 second
         const now = Date.now();
         if (now - lastTabSwitchTime < 1000) return;
         lastTabSwitchTime = now;
@@ -295,64 +371,53 @@ document.addEventListener("DOMContentLoaded", async () => {
             tabSwitchCount++;
             updateProctorBadge();
 
-            // Show Proctoring Warning Modal
-            const modal = document.getElementById("tabWarningModal");
-            const countEl = document.getElementById("modalViolationCount");
-            if (modal && countEl) {
-                countEl.textContent = `${tabSwitchCount} of ${MAX_TAB_SWITCHES}`;
-                modal.style.display = "flex";
+            if (tabWarningModal && modalViolationCount) {
+                modalViolationCount.textContent = `${tabSwitchCount} of ${MAX_TAB_SWITCHES}`;
+                tabWarningModal.style.display = "flex";
             }
         }
     }
 
     function updateProctorBadge() {
-        const badge = document.getElementById("badgeProctor");
-        if (!badge) return;
-        badge.textContent = `🛡️ Tab Switches: ${tabSwitchCount}`;
-        badge.classList.remove("warning", "danger");
+        if (!badgeProctor) return;
+        badgeProctor.textContent = `🛡️ Tab Switches: ${tabSwitchCount}`;
+        badgeProctor.classList.remove("warning", "danger");
         if (tabSwitchCount >= 3) {
-            badge.classList.add("danger");
+            badgeProctor.classList.add("danger");
         } else if (tabSwitchCount >= 1) {
-            badge.classList.add("warning");
+            badgeProctor.classList.add("warning");
         }
     }
 
     function handleBeforeUnload(e) {
         if (proctoringActive && interviewPhase.style.display !== "none") {
             e.preventDefault();
-            e.returnValue = "An AI mock interview is currently in progress. Leaving this page will terminate your session.";
+            e.returnValue = "An AI mock interview is in progress. Leaving will terminate your session.";
             return e.returnValue;
         }
     }
 
     function handleNavIntercept(e) {
         if (proctoringActive && interviewPhase.style.display !== "none") {
-            const confirmed = confirm("An AI mock interview is currently in progress. If you leave now, your current interview session will be closed.\n\nDo you want to leave?");
+            const confirmed = confirm("An AI mock interview is currently in progress. If you leave now, your session will end.\n\nDo you want to leave?");
             if (!confirmed) {
                 e.preventDefault();
             } else {
                 stopProctoring();
                 stopAISpeech();
+                stopListening();
             }
         }
     }
 
-    const btnDismissWarning = document.getElementById("btnDismissWarning");
     if (btnDismissWarning) {
         btnDismissWarning.addEventListener("click", () => {
-            const modal = document.getElementById("tabWarningModal");
-            if (modal) modal.style.display = "none";
+            if (tabWarningModal) tabWarningModal.style.display = "none";
         });
     }
 
-    // 8. Start Interview
-    document.getElementById("btnStart").addEventListener("click", async () => {
-        if (!stream) {
-            document.getElementById("setupError").textContent = "Please allow camera and microphone access before starting the interview.";
-            document.getElementById("setupError").style.display = "block";
-            return;
-        }
-
+    // 7. Start Interview
+    btnStart.addEventListener("click", async () => {
         const payload = {
             target_role: profile.target_role || resultData.job_role,
             matched_skills: resultData.matched_skills || [],
@@ -367,7 +432,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         interviewPhase.style.display = "grid";
         startTimer();
         updateProgress();
-        startProctoring(); // Enable proctoring exclusively for this interview session
+        startProctoring(); // Enable proctoring strictly for this interview session
 
         try {
             const res = await fetch("/api/interview/start", {
@@ -382,32 +447,41 @@ document.addEventListener("DOMContentLoaded", async () => {
             systemPrompt = data.system_prompt;
             conversationHistory.push({ role: "assistant", content: data.reply });
             typeWriter("aiQuestion", data.reply);
-            speakAI(data.reply); // Speak question out loud
+            
+            // AI speaks the question, and automatically arms the mic when finished!
+            speakAI(data.reply, () => {
+                startListening();
+            });
         } catch (e) {
             document.getElementById("aiQuestion").innerHTML = `<span style='color:var(--danger)'>Error: ${e.message}</span>`;
         }
     });
 
-    // Transcript Box Manual Typing support
-    document.getElementById("transcriptBox").addEventListener("input", function() {
+    // Transcript Box fallback input handler
+    transcriptBox.addEventListener("input", function() {
         baseTranscript = this.value;
-        document.getElementById("btnSubmitAnswer").disabled = this.value.trim().length === 0;
+        btnSubmitAnswer.disabled = this.value.trim().length === 0;
+        if (btnRespeak && this.value.trim().length > 0) {
+            btnRespeak.style.display = "inline-block";
+        }
     });
 
-    // 9. Submit Answer
-    document.getElementById("btnSubmitAnswer").addEventListener("click", async () => {
-        if (shouldBeRecording) toggleMic(false);
+    // 8. Submit Voice Answer
+    btnSubmitAnswer.addEventListener("click", async () => {
+        stopListening();
         stopAISpeech();
         
-        const answer = document.getElementById("transcriptBox").value.trim();
+        const answer = transcriptBox.value.trim();
         if (!answer) return;
         
-        document.getElementById("btnSubmitAnswer").disabled = true;
-        document.getElementById("transcriptBox").value = "";
+        btnSubmitAnswer.disabled = true;
+        if (btnRespeak) btnRespeak.style.display = "none";
+        transcriptBox.value = "";
         baseTranscript = "";
+        interimTranscript = "";
         
         conversationHistory.push({ role: "user", content: answer });
-        document.getElementById("aiQuestion").innerHTML = "<div class='spinner' style='width:20px;height:20px;'></div> AI is thinking...";
+        document.getElementById("aiQuestion").innerHTML = "<div class='spinner' style='width:20px;height:20px;'></div> AI is evaluating your reply and preparing the next question...";
 
         try {
             const res = await fetch("/api/interview/message", {
@@ -424,7 +498,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             
             conversationHistory.push({ role: "assistant", content: data.reply });
             typeWriter("aiQuestion", data.reply);
-            speakAI(data.reply); // Speak AI response out loud
+            
+            // AI speaks response, then auto-activates mic for next reply
+            speakAI(data.reply, () => {
+                startListening();
+            });
             
             currentQ++;
             updateProgress();
@@ -434,23 +512,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 10. End / Evaluate Interview
-    document.getElementById("btnEndEarly").addEventListener("click", () => {
-        if (confirm("Are you sure you want to end the interview and generate the performance report?")) {
+    // 9. End / Evaluate Interview Early
+    btnEndEarly.addEventListener("click", () => {
+        if (confirm("Are you sure you want to end the interview and generate your performance report?")) {
             generateReport();
         }
     });
 
     async function generateReport() {
-        stopProctoring(); // Disable tab restriction as interview concludes
+        stopProctoring(); // Disable tab restriction as session finishes
         stopAISpeech();
-        if (shouldBeRecording) toggleMic(false);
+        stopListening();
 
         interviewPhase.style.display = "none";
         reportPhase.style.display = "block";
         clearInterval(timerInterval);
         
-        // Stop camera stream
         if (stream) {
             stream.getTracks().forEach(t => t.stop());
         }
@@ -459,7 +536,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div style="text-align:center; padding: 50px;">
                 <div class="spinner" style="margin: 0 auto 20px;"></div>
                 <h3>AI is evaluating your interview...</h3>
-                <p class="muted">Generating your comprehensive performance analysis.</p>
+                <p class="muted">Generating comprehensive feedback from your spoken responses.</p>
             </div>
         `;
 
@@ -477,7 +554,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             
             renderReport(data.evaluation);
             
-            // Save history with proctoring metadata
+            // Save history with proctoring stats
             const history = JSON.parse(localStorage.getItem('sb_interview_history') || '[]');
             history.push({
                 date: new Date().toISOString(),
@@ -600,9 +677,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("qProgress").textContent = `Q ${qStr} of ${maxQ}`;
         
         if (currentQ > maxQ) {
-            document.getElementById("btnEndEarly").textContent = "Finish & Evaluate Interview";
-            document.getElementById("btnEndEarly").classList.remove("danger-btn");
-            document.getElementById("btnEndEarly").classList.add("primary");
+            btnEndEarly.textContent = "Finish & Evaluate Interview";
+            btnEndEarly.classList.remove("danger-btn");
+            btnEndEarly.classList.add("primary");
         }
     }
 

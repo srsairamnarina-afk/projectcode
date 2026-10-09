@@ -111,9 +111,10 @@
         </div>
         <textarea id="transcriptBox" class="transcript-area" placeholder="Click 'Start Speaking' and your words will appear here..."></textarea>
         
-        <div class="controls">
-          <button class="btn outline-btn" id="btnSpeak" style="flex: 1;"><span id="speakIcon">🎤</span> <span id="speakText">Start Speaking</span></button>
-          <button class="btn primary" id="btnSubmitAnswer" style="flex: 1;" disabled>Submit Answer</button>
+        <div class="controls" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn outline-btn" id="btnSpeak" style="flex: 2;"><span id="speakIcon">🎤</span> <span id="speakText">Start Speaking</span></button>
+          <button class="btn outline-btn" id="btnRespeak" style="flex: 1; display: none;" title="Clear and record your voice answer again">🔄 Re-speak</button>
+          <button class="btn primary" id="btnSubmitAnswer" style="flex: 2;" disabled>Submit Answer</button>
         </div>
       </div>
     </div>
