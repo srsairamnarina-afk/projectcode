@@ -519,7 +519,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     function enterFullscreen() {
         try {
             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
+                const el = document.documentElement;
+                if (el.requestFullscreen) {
+                    el.requestFullscreen().catch(() => {});
+                } else if (el.webkitRequestFullscreen) {
+                    el.webkitRequestFullscreen();
+                } else if (el.msRequestFullscreen) {
+                    el.msRequestFullscreen();
+                }
             }
         } catch (e) {}
     }
@@ -527,7 +534,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     function exitFullscreen() {
         try {
             if (document.fullscreenElement) {
-                document.exitFullscreen().catch(() => {});
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
             }
         } catch (e) {}
     }
@@ -535,15 +546,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     function startProctoring() {
         proctoringActive = true;
         tabSwitchCount = 0;
+        document.body.classList.add("proctoring-active");
         updateProctorBadge();
         enterFullscreen();
 
-        document.addEventListener("visibilitychange", handleTabSwitch);
-        window.addEventListener("blur", handleTabSwitch);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", handleWindowBlur);
+        window.addEventListener("focus", handleWindowFocus);
         window.addEventListener("beforeunload", handleBeforeUnload);
         document.addEventListener("fullscreenchange", handleFullscreenChange);
-        document.addEventListener("keydown", handleKeyLock);
+        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+        document.addEventListener("keydown", handleKeyLock, true);
         document.addEventListener("contextmenu", handleContextMenuLock);
+        document.addEventListener("copy", handleCopyPasteLock);
+        document.addEventListener("paste", handleCopyPasteLock);
 
         document.querySelectorAll("header.navbar a, nav a").forEach(link => {
             link.addEventListener("click", handleNavIntercept);
@@ -552,12 +568,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function stopProctoring() {
         proctoringActive = false;
-        document.removeEventListener("visibilitychange", handleTabSwitch);
-        window.removeEventListener("blur", handleTabSwitch);
+        document.body.classList.remove("proctoring-active");
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        window.removeEventListener("blur", handleWindowBlur);
+        window.removeEventListener("focus", handleWindowFocus);
         window.removeEventListener("beforeunload", handleBeforeUnload);
         document.removeEventListener("fullscreenchange", handleFullscreenChange);
-        document.removeEventListener("keydown", handleKeyLock);
+        document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+        document.removeEventListener("keydown", handleKeyLock, true);
         document.removeEventListener("contextmenu", handleContextMenuLock);
+        document.removeEventListener("copy", handleCopyPasteLock);
+        document.removeEventListener("paste", handleCopyPasteLock);
 
         document.querySelectorAll("header.navbar a, nav a").forEach(link => {
             link.removeEventListener("click", handleNavIntercept);
@@ -567,42 +588,85 @@ document.addEventListener("DOMContentLoaded", async () => {
         exitFullscreen();
     }
 
-    function handleTabSwitch() {
+    function triggerProctorViolation(source = "tab_switch") {
         if (!proctoringActive || interviewPhase.style.display === "none") return;
         
         const now = Date.now();
-        if (now - lastTabSwitchTime < 1000) return;
+        if (now - lastTabSwitchTime < 1500) return;
         lastTabSwitchTime = now;
 
-        if (document.hidden) {
-            tabSwitchCount++;
-            updateProctorBadge();
-            playWarningBeep();
+        tabSwitchCount++;
+        updateProctorBadge();
+        playWarningBeep();
 
-            if (tabWarningModal && modalViolationCount) {
+        if (tabWarningModal && modalViolationCount) {
+            modalViolationCount.textContent = `${tabSwitchCount} of ${MAX_TAB_SWITCHES}`;
+            tabWarningModal.style.display = "flex";
+        }
+
+        // Auto-terminate if strikes reach maximum
+        if (tabSwitchCount >= MAX_TAB_SWITCHES) {
+            setTimeout(() => {
+                alert(`⚠️ Session Notice: You have reached ${tabSwitchCount} tab violations. The proctored interview is now completing.`);
+                if (tabWarningModal) tabWarningModal.style.display = "none";
+                finishInterview();
+            }, 1000);
+        }
+    }
+
+    function handleVisibilityChange() {
+        if (!proctoringActive || interviewPhase.style.display === "none") return;
+        if (document.hidden) {
+            triggerProctorViolation("tab_hidden");
+        } else {
+            // Returned to tab after switching
+            if (tabWarningModal) {
                 modalViolationCount.textContent = `${tabSwitchCount} of ${MAX_TAB_SWITCHES}`;
                 tabWarningModal.style.display = "flex";
             }
         }
     }
 
+    function handleWindowBlur() {
+        if (!proctoringActive || interviewPhase.style.display === "none") return;
+        triggerProctorViolation("window_blur");
+    }
+
+    function handleWindowFocus() {
+        if (!proctoringActive || interviewPhase.style.display === "none") return;
+        if (tabSwitchCount > 0 && tabWarningModal) {
+            tabWarningModal.style.display = "flex";
+        }
+    }
+
     function handleFullscreenChange() {
         if (!proctoringActive || interviewPhase.style.display === "none") return;
-        if (!document.fullscreenElement) {
-            // Exited fullscreen
-            handleTabSwitch();
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            triggerProctorViolation("fullscreen_exit");
         }
     }
 
     function handleKeyLock(e) {
         if (!proctoringActive || interviewPhase.style.display === "none") return;
-        // Block tab-switch & window closure combinations (Ctrl+W, Ctrl+T, Ctrl+N, Alt+Tab warning, F11, F5)
+        
+        // Strict blocking of shortcuts: Ctrl+Tab, Alt+Tab, Ctrl+W, Ctrl+T, Ctrl+N, Ctrl+R, F5, F11, F12, Escape
+        const isCtrl = e.ctrlKey || e.metaKey;
+        const key = e.key;
+
         if (
-            (e.ctrlKey && (e.key === 't' || e.key === 'T' || e.key === 'w' || e.key === 'W' || e.key === 'n' || e.key === 'N')) ||
-            e.key === 'F11' || e.key === 'F5'
+            (isCtrl && (key === 't' || key === 'T' || key === 'w' || key === 'W' || key === 'n' || key === 'N' || key === 'r' || key === 'R' || key === 'l' || key === 'L' || key === 'u' || key === 'U' || key === 'Tab' || (key >= '1' && key <= '9'))) ||
+            (isCtrl && e.shiftKey && (key === 'I' || key === 'i' || key === 'J' || key === 'j' || key === 'C' || key === 'c')) ||
+            (e.altKey && (key === 'Tab' || key === 'F4' || key === 'ArrowLeft' || key === 'ArrowRight')) ||
+            key === 'F11' || key === 'F5' || key === 'F12'
         ) {
             e.preventDefault();
-            handleTabSwitch();
+            e.stopPropagation();
+            triggerProctorViolation("key_shortcut");
+            return false;
+        }
+
+        if (key === 'Escape') {
+            triggerProctorViolation("escape_key");
         }
     }
 
@@ -612,9 +676,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    function handleCopyPasteLock(e) {
+        if (proctoringActive && interviewPhase.style.display !== "none") {
+            e.preventDefault();
+        }
+    }
+
     function updateProctorBadge() {
         if (!badgeProctor) return;
-        badgeProctor.textContent = `🛡️ Tab Lock Active: ${tabSwitchCount} Switches`;
+        badgeProctor.textContent = `🛡️ Tab Lock Active: ${tabSwitchCount} / ${MAX_TAB_SWITCHES} Strikes`;
         badgeProctor.classList.remove("warning", "danger");
         if (tabSwitchCount >= 3) {
             badgeProctor.classList.add("danger");
