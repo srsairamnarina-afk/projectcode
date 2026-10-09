@@ -1,143 +1,580 @@
-/* Mock Interview Isolated Styles */
+/* SkillBridge AI - Google Meet Style Mock Interview Isolated Styles */
 
 .interview-container {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 5%;
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 2%;
 }
 
+/* =========================================
+   1. SETUP PHASE (PRE-MEETING LOBBY)
+   ========================================= */
 .setup-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 40px;
     box-shadow: var(--shadow-lg);
     max-width: 800px;
-    margin: 0 auto;
+    margin: 30px auto;
 }
 
 .setup-card h2 { margin-bottom: 20px; }
 
 .camera-preview-container {
-    background: #000;
-    border-radius: 12px;
+    background: #1e1e24;
+    border-radius: 16px;
     overflow: hidden;
     position: relative;
     aspect-ratio: 16/9;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    margin-bottom: 25px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
 }
 
-#setupVideo, #interviewVideo {
+#setupVideo {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* Mirror effect */
+    transform: scaleX(-1);
 }
 
-.interview-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-}
-
-.video-panel {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 20px;
+/* =========================================
+   2. GOOGLE MEET INTERVIEW ROOM CONTAINER
+   ========================================= */
+.meet-room-container {
+    background: #202124;
+    border-radius: 24px;
+    padding: 20px 24px 24px;
+    color: #e8eaed;
     display: flex;
     flex-direction: column;
-}
-
-.ai-panel {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
+    min-height: 82vh;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
     position: relative;
+    user-select: none;
 }
 
-.ai-header {
+/* Fullscreen Mode Hook */
+:fullscreen .meet-room-container,
+:-webkit-full-screen .meet-room-container {
+    border-radius: 0;
+    min-height: 100vh;
+    padding: 20px 30px 25px;
+    width: 100vw;
+}
+
+/* Top Meeting Bar */
+.meet-top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 15px;
-    margin-bottom: 20px;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.ai-bubble {
-    background: rgba(37,99,235,0.05);
-    border-left: 4px solid var(--primary);
-    padding: 20px;
-    border-radius: 0 12px 12px 0;
-    font-size: 18px;
-    line-height: 1.6;
-    margin-bottom: 20px;
-    color: var(--text-main);
-    min-height: 100px;
-}
-
-body.dark-mode .ai-bubble {
-    background: rgba(16,185,129,0.1);
-    border-left-color: var(--success);
-}
-
-.transcript-area {
-    width: 100%;
-    min-height: 120px;
-    padding: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-color);
-    color: var(--text-main);
-    font-family: inherit;
-    font-size: 15px;
-    resize: vertical;
-    margin-bottom: 15px;
-}
-
-.controls {
+.meet-room-title {
     display: flex;
-    gap: 15px;
-    margin-top: 15px;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f3f4;
 }
 
-.recording-indicator {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    background: var(--danger);
+.meet-dot {
+    width: 10px;
+    height: 10px;
+    background: #34d399;
     border-radius: 50%;
-    margin-right: 8px;
-    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 10px #34d399;
+    animation: livePulse 2s infinite;
 }
 
-@keyframes pulse {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+@keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
 }
 
-.status-badge {
-    padding: 6px 12px;
-    border-radius: 20px;
+.meet-badge {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
     font-size: 12px;
-    font-weight: bold;
-    background: rgba(100,116,139,0.1);
-    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
 }
-.status-badge.active {
-    background: rgba(16,185,129,0.1);
-    color: var(--success);
+.meet-badge.warning {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fcd34d;
+}
+.meet-badge.danger {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
 }
 
+.meet-top-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.meet-timer {
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e8f0;
+    background: rgba(255,255,255,0.08);
+    padding: 4px 12px;
+    border-radius: 8px;
+}
+
+.meet-pill {
+    background: #1a73e8;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 20px;
+}
+
+/* =========================================
+   3. 2-TILE VIDEO GRID (SARAH & CANDIDATE)
+   ========================================= */
+.meet-video-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    flex-grow: 1;
+    min-height: 480px;
+    margin-bottom: 20px;
+}
+
+.meet-tile {
+    background: #3c4043;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.meet-tile.speaking-active {
+    border-color: #8ab4f8;
+    box-shadow: 0 0 25px rgba(138, 180, 248, 0.35);
+}
+
+/* Sarah Interviewer Tile */
+.sarah-tile {
+    background: radial-gradient(circle at center, #2d3748 0%, #1a202c 100%);
+}
+
+.sarah-avatar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 2;
+    margin-bottom: 60px;
+}
+
+.sarah-avatar {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sarah-img-frame {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    z-index: 3;
+}
+
+.sarah-pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid #8ab4f8;
+    opacity: 0;
+    transform: scale(1);
+    transition: all 0.3s ease;
+}
+
+.sarah-tile.speaking-active .sarah-pulse-ring {
+    animation: sarahSpeakingRing 1.5s infinite ease-out;
+}
+
+@keyframes sarahSpeakingRing {
+    0% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.35); opacity: 0.4; }
+    100% { transform: scale(1.55); opacity: 0; }
+}
+
+.sarah-status-text {
+    font-size: 14px;
+    color: #cbd5e1;
+    background: rgba(0,0,0,0.4);
+    padding: 6px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+/* Candidate Tile */
+.candidate-tile {
+    background: #1e1e24;
+}
+
+#interviewVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
+
+.cam-off-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #94a3b8;
+}
+
+.cam-off-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+}
+
+/* Tile Bottom-Left Name Badge */
+.tile-nametag {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #f1f3f4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 5;
+}
+
+.nametag-icon { font-size: 14px; }
+
+.user-speaking-tag {
+    background: #10b981;
+    color: white;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    animation: livePulse 1.2s infinite;
+}
+
+/* Audio Waveform Bars */
+.audio-wave-bars {
+    display: none;
+    align-items: center;
+    gap: 3px;
+    height: 12px;
+}
+.sarah-tile.speaking-active .audio-wave-bars { display: inline-flex; }
+
+.audio-wave-bars span {
+    width: 2px;
+    height: 100%;
+    background: #8ab4f8;
+    border-radius: 1px;
+    animation: waveBar 0.8s infinite ease-in-out;
+}
+.audio-wave-bars span:nth-child(2) { animation-delay: 0.15s; }
+.audio-wave-bars span:nth-child(3) { animation-delay: 0.3s; }
+.audio-wave-bars span:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes waveBar {
+    0%, 100% { height: 3px; }
+    50% { height: 12px; }
+}
+
+/* Closed Captions Subtitle Overlays */
+.meet-captions-overlay {
+    position: absolute;
+    bottom: 60px;
+    left: 16px;
+    right: 16px;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 14px 18px;
+    z-index: 4;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-height: 150px;
+    overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+.caption-speaker {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a78bfa;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.caption-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #f8fafc;
+}
+
+.placeholder-captions {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* =========================================
+   4. GOOGLE MEET BOTTOM CONTROL DOCK
+   ========================================= */
+.meet-bottom-dock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1e1e24;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 40px;
+    padding: 10px 24px;
+    margin-top: auto;
+}
+
+.meet-dock-left {
+    display: flex;
+    align-items: center;
+}
+.dock-role-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.meet-dock-center {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Circular Meet Buttons */
+.meet-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #3c4043;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.meet-btn:hover {
+    background: #4d5156;
+    transform: scale(1.05);
+}
+
+.meet-btn-icon { font-size: 20px; }
+
+/* Tooltip on Hover */
+.meet-btn-tooltip {
+    position: absolute;
+    bottom: 58px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #202124;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.meet-btn:hover .meet-btn-tooltip { opacity: 1; }
+
+/* Mic Active vs Muted */
+.meet-btn.mic-btn.active {
+    background: #1a73e8;
+    border-color: #8ab4f8;
+    animation: micRipple 1.8s infinite;
+}
+.meet-btn.mic-btn.muted {
+    background: #ea4335;
+}
+
+@keyframes micRipple {
+    0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.6); }
+    70% { box-shadow: 0 0 0 12px rgba(26, 115, 232, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+}
+
+/* Red Hangup Call Button */
+.meet-btn.hangup-btn {
+    background: #ea4335;
+    width: 60px;
+    border-radius: 30px;
+}
+.meet-btn.hangup-btn:hover {
+    background: #d93025;
+    transform: scale(1.05);
+}
+
+/* Submit Answer Pill Button */
+.meet-submit-btn {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 0 20px;
+    height: 48px;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    transition: all 0.2s ease;
+}
+.meet-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+}
+.meet-submit-btn:disabled {
+    background: #374151;
+    color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.meet-dock-right {
+    display: flex;
+    align-items: center;
+}
+.dock-secure-tag {
+    font-size: 12px;
+    color: #94a3b8;
+    background: rgba(255,255,255,0.05);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+/* =========================================
+   5. STRICT PROCTORING FULLSCREEN OVERLAY
+   ========================================= */
+.proctor-fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 15, 29, 0.94);
+    backdrop-filter: blur(14px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.25s ease;
+}
+
+.proctor-fullscreen-card {
+    background: #1e293b;
+    border: 2px solid #ef4444;
+    border-radius: 28px;
+    padding: 45px 35px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 30px 70px rgba(239, 68, 68, 0.35);
+    animation: scaleModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.proctor-alert-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    animation: shake 0.5s ease-in-out;
+}
+
+.proctor-strike-pill {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 8px 18px;
+    font-size: 15px;
+    margin: 15px auto;
+    display: inline-block;
+    color: #f87171;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+@keyframes scaleModal {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* =========================================
+   6. REPORT CARD STYLES
+   ========================================= */
 .report-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -146,122 +583,14 @@ body.dark-mode .ai-bubble {
     margin-top: 20px;
 }
 
+/* Responsive Mobile Layout */
 @media (max-width: 900px) {
-    .interview-layout { grid-template-columns: 1fr; }
-}
-
-/* Voice Toggle Button */
-.btn-voice-toggle {
-    background: rgba(37, 99, 235, 0.1);
-    border: 1px solid rgba(37, 99, 235, 0.2);
-    color: var(--primary);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.btn-voice-toggle:hover {
-    background: var(--primary);
-    color: white;
-}
-.btn-voice-toggle.muted {
-    background: rgba(100, 116, 139, 0.1);
-    color: var(--text-muted);
-    border-color: var(--border-color);
-}
-
-/* Proctoring Badge & Alert */
-.status-badge.proctor-badge {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--primary);
-    transition: background 0.3s, color 0.3s;
-}
-.status-badge.proctor-badge.warning {
-    background: rgba(245, 158, 11, 0.15);
-    color: #d97706;
-}
-.status-badge.proctor-badge.danger {
-    background: rgba(239, 68, 68, 0.15);
-    color: var(--danger);
-}
-
-/* Speech Live Feedback */
-.speech-live-status {
-    font-size: 13px;
-    color: var(--primary);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: fadeIn 0.2s ease;
-}
-.speech-wave {
-    display: inline-flex;
-    gap: 3px;
-    align-items: center;
-    height: 14px;
-}
-.speech-wave span {
-    width: 3px;
-    height: 100%;
-    background: var(--primary);
-    border-radius: 2px;
-    animation: wave 1s infinite ease-in-out;
-}
-.speech-wave span:nth-child(2) { animation-delay: 0.2s; }
-.speech-wave span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes wave {
-    0%, 100% { height: 4px; }
-    50% { height: 14px; }
-}
-
-/* Proctoring Modal */
-.proctor-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(8px);
-    z-index: 99999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    animation: fadeIn 0.2s ease;
-}
-.proctor-modal-card {
-    background: var(--card-bg);
-    border: 2px solid var(--danger);
-    border-radius: 24px;
-    padding: 35px 30px;
-    max-width: 480px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.25);
-    animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.proctor-modal-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-}
-.proctor-violation-meter {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 10px;
-    padding: 8px 15px;
-    font-size: 14px;
-    margin: 15px auto;
-    display: inline-block;
-}
-@keyframes scaleUp {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    .meet-video-grid {
+        grid-template-columns: 1fr;
+    }
+    .meet-bottom-dock {
+        flex-direction: column;
+        gap: 12px;
+        border-radius: 24px;
+    }
 }

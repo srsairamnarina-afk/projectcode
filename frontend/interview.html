@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillBridge AI | Mock Interview</title>
+  <title>SkillBridge AI | Mock Interview Room</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/interview.css">
   <script src="/js/nav.js"></script>
@@ -11,12 +11,12 @@
 <body>
 <main class="interview-container">
 
-  <!-- SETUP PHASE -->
+  <!-- SETUP PHASE (PRE-MEETING LOBBY) -->
   <div id="setupPhase" class="setup-card">
     <div class="section-heading text-center" style="margin-top:0;">
       <p class="eyebrow">PREPARATION</p>
-      <h2>AI Mock Interview Setup</h2>
-      <p class="subtitle">Configure your interview parameters based on your profile.</p>
+      <h2>Google Meet Style AI Interview Setup</h2>
+      <p class="subtitle">Join Sarah in an interactive, voice-driven simulated video interview room.</p>
     </div>
 
     <div style="background: rgba(37,99,235,0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
@@ -57,67 +57,145 @@
       <div id="camOverlay" style="position: absolute; color: white;">Requesting Camera Access...</div>
     </div>
 
-    <div style="display: flex; gap: 15px; justify-content: center;">
-      <button class="btn outline-btn" id="btnTestMic">🎤 Test Mic</button>
-      <button class="btn primary btn-large" id="btnStart">Start Interview</button>
+    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+      <button class="btn outline-btn" id="btnTestMic">🎤 Test Microphone</button>
+      <button class="btn primary btn-large" id="btnStart">🚀 Join Interview Room</button>
     </div>
     <div id="setupError" style="color: var(--danger); text-align: center; margin-top: 15px; display: none;"></div>
   </div>
 
-  <!-- INTERVIEW PHASE -->
-  <div id="interviewPhase" class="interview-layout" style="display: none;">
-    <!-- LEFT: Candidate -->
-    <div class="video-panel">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
-        <h3 style="margin:0;">Candidate Camera</h3>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <span class="status-badge active" id="badgeCam">📸 Cam ON</span>
-          <span class="status-badge" id="badgeMic">🎤 Mic OFF</span>
-          <span class="status-badge proctor-badge" id="badgeProctor">🛡️ Tab Switches: 0</span>
-        </div>
+  <!-- INTERVIEW PHASE (GOOGLE MEET ROOM) -->
+  <div id="interviewPhase" class="meet-room-container" style="display: none;">
+    
+    <!-- TOP MEETING BAR -->
+    <div class="meet-top-bar">
+      <div class="meet-room-title">
+        <span class="meet-dot"></span>
+        <span id="meetRoomLabel">SkillBridge AI Interview Room</span>
+        <span class="meet-badge" id="badgeProctor">🛡️ Tab Lock Active: 0 Switches</span>
       </div>
-      
-      <div class="camera-preview-container" style="flex-grow: 1;">
-        <video id="interviewVideo" autoplay muted playsinline></video>
+      <div class="meet-top-controls">
+        <span class="meet-timer" id="timer">00:00</span>
+        <span class="meet-pill" id="qProgress">Question 1 of 5</span>
       </div>
-      
-      <button class="btn danger-btn full" id="btnEndEarly" style="margin-top: auto;">End Interview Early</button>
     </div>
 
-    <!-- RIGHT: AI Interviewer -->
-    <div class="ai-panel">
-      <div class="ai-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <h3 style="margin:0; color: var(--primary);">👩‍💼 AI Interviewer (Sarah)</h3>
-          <button id="btnToggleVoice" class="btn-voice-toggle" title="Toggle AI Voice Speech">🔊 Voice ON</button>
+    <!-- MAIN 2-TILE VIDEO GRID -->
+    <div class="meet-video-grid">
+      
+      <!-- TILE 1: INTERVIEWER (SARAH) -->
+      <div class="meet-tile sarah-tile" id="sarahTile">
+        <div class="sarah-avatar-container">
+          <div class="sarah-avatar" id="sarahAvatar">
+            <div class="sarah-pulse-ring" id="sarahPulse"></div>
+            <div class="sarah-img-frame">
+              <span style="font-size: 64px;">👩‍💼</span>
+            </div>
+          </div>
+          <div class="sarah-status-text" id="sarahStatus">Sarah is asking a question...</div>
         </div>
-        <div>
-          <span style="font-weight: bold; margin-right: 15px;" id="timer">00:00</span>
-          <span class="badge tag" id="qProgress">Q 1 of 5</span>
+
+        <!-- Subtitles / Question from Sarah -->
+        <div class="meet-captions-overlay" id="sarahCaptionsOverlay">
+          <div class="caption-speaker">👩‍💼 Sarah (AI Interviewer)</div>
+          <div class="caption-text" id="aiQuestion">Loading interview question...</div>
         </div>
-      </div>
 
-      <div class="ai-bubble" id="aiQuestion">
-        Loading interview environment...
-      </div>
-
-      <div style="margin-top: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <p style="font-weight: bold; margin: 0; font-size: 14px;">Your Answer:</p>
-          <div id="speechLiveStatus" class="speech-live-status" style="display: none;">
-            <div class="speech-wave"><span></span><span></span><span></span></div>
-            <span>Listening... speak now</span>
+        <!-- Tile Name Tag -->
+        <div class="tile-nametag">
+          <div class="nametag-icon">👩‍💼</div>
+          <span>Sarah (Technical Interviewer)</span>
+          <div class="audio-wave-bars" id="sarahAudioWave">
+            <span></span><span></span><span></span><span></span>
           </div>
         </div>
-        <textarea id="transcriptBox" class="transcript-area" placeholder="Click 'Start Speaking' and your words will appear here..."></textarea>
-        
-        <div class="controls" style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button class="btn outline-btn" id="btnSpeak" style="flex: 2;"><span id="speakIcon">🎤</span> <span id="speakText">Start Speaking</span></button>
-          <button class="btn outline-btn" id="btnRespeak" style="flex: 1; display: none;" title="Clear and record your voice answer again">🔄 Re-speak</button>
-          <button class="btn primary" id="btnSubmitAnswer" style="flex: 2;" disabled>Submit Answer</button>
+      </div>
+
+      <!-- TILE 2: CANDIDATE (YOU) -->
+      <div class="meet-tile candidate-tile" id="candidateTile">
+        <video id="interviewVideo" autoplay playsinline></video>
+        <div class="cam-off-placeholder" id="camOffPlaceholder" style="display: none;">
+          <div class="cam-off-avatar">👤</div>
+          <p>Camera is turned off</p>
+        </div>
+
+        <!-- Live Real-Time Spoken Answer Captions -->
+        <div class="meet-captions-overlay candidate-captions" id="candidateCaptionsOverlay">
+          <div class="caption-speaker" style="color: #60a5fa;">👤 You (Spoken Answer)</div>
+          <div class="caption-text" id="candidateLiveTranscript">
+            <span class="placeholder-captions">🎙️ Waiting for Sarah to finish speaking...</span>
+          </div>
+        </div>
+
+        <!-- Tile Name Tag -->
+        <div class="tile-nametag">
+          <div class="nametag-icon" id="userMicIcon">🎤</div>
+          <span id="candidateNameTag">You (Candidate)</span>
+          <span class="user-speaking-tag" id="userSpeakingTag" style="display: none;">Speaking...</span>
         </div>
       </div>
+
     </div>
+
+    <!-- Hidden Fallback Textarea for Form Compatibility -->
+    <textarea id="transcriptBox" style="display: none;"></textarea>
+    <div id="speechLiveStatus" style="display: none;"></div>
+    <span id="badgeMic" style="display: none;"></span>
+    <span id="badgeCam" style="display: none;"></span>
+
+    <!-- GOOGLE MEET BOTTOM CONTROL BAR -->
+    <div class="meet-bottom-dock">
+      
+      <!-- Left Info -->
+      <div class="meet-dock-left">
+        <span class="dock-role-text" id="dockRoleName">Software Professional</span>
+      </div>
+
+      <!-- Center Action Buttons -->
+      <div class="meet-dock-center">
+        <!-- Mic Toggle Button -->
+        <button class="meet-btn mic-btn" id="btnSpeak" title="Toggle Microphone (Speak Answer)">
+          <span class="meet-btn-icon" id="speakIcon">🎤</span>
+          <span class="meet-btn-tooltip" id="speakText">Speak Answer</span>
+        </button>
+
+        <!-- Camera Toggle Button -->
+        <button class="meet-btn cam-btn" id="btnToggleCam" title="Toggle Camera On/Off">
+          <span class="meet-btn-icon">📹</span>
+          <span class="meet-btn-tooltip">Camera</span>
+        </button>
+
+        <!-- Re-speak Button -->
+        <button class="meet-btn respeak-btn" id="btnRespeak" title="Clear and Re-speak Answer" style="display: none;">
+          <span class="meet-btn-icon">🔄</span>
+          <span class="meet-btn-tooltip">Re-speak</span>
+        </button>
+
+        <!-- AI Voice Toggle -->
+        <button class="meet-btn voice-btn" id="btnToggleVoice" title="Toggle Sarah's Voice Speech">
+          <span class="meet-btn-icon">🔊</span>
+          <span class="meet-btn-tooltip">Sarah's Voice</span>
+        </button>
+
+        <!-- Submit Voice Answer Button -->
+        <button class="meet-submit-btn" id="btnSubmitAnswer" disabled title="Submit your spoken answer">
+          <span>🚀 Submit Answer</span>
+        </button>
+
+        <!-- Red Hangup / End Interview Button -->
+        <button class="meet-btn hangup-btn" id="btnEndEarly" title="End Interview Early">
+          <span class="meet-btn-icon">📞</span>
+          <span class="meet-btn-tooltip">Leave Interview</span>
+        </button>
+      </div>
+
+      <!-- Right Proctor Info -->
+      <div class="meet-dock-right">
+        <span class="dock-secure-tag">🔒 Anti-Cheat Proctoring Active</span>
+      </div>
+
+    </div>
+
   </div>
 
   <!-- REPORT PHASE -->
@@ -133,17 +211,23 @@
     </div>
   </div>
 
-  <!-- PROCTORING / TAB SWITCH WARNING MODAL (Active strictly during Mock Interview only) -->
-  <div id="tabWarningModal" class="proctor-modal" style="display: none;">
-    <div class="proctor-modal-card">
-      <div class="proctor-modal-icon">⚠️</div>
-      <h3 style="margin-bottom: 10px; color: var(--danger);">Tab Switch Detected!</h3>
-      <p style="color: var(--text-main); font-size: 15px; line-height: 1.5;">Tab switching is strictly restricted during the AI Mock Interview to maintain interview integrity.</p>
-      <div class="proctor-violation-meter">
-        Warning: <span id="modalViolationCount" style="font-weight: bold; color: var(--danger);">1 of 3</span>
+  <!-- STRICT PROCTORING / TAB SWITCH WARNING OVERLAY (Active strictly during Mock Interview only) -->
+  <div id="tabWarningModal" class="proctor-fullscreen-overlay" style="display: none;">
+    <div class="proctor-fullscreen-card">
+      <div class="proctor-alert-icon">⚠️</div>
+      <h2 style="color: #ef4444; margin-bottom: 12px;">Tab Switch Prohibited!</h2>
+      <p style="font-size: 16px; line-height: 1.6; color: #e2e8f0; margin-bottom: 15px;">
+        Tab switching and leaving the interview window is strictly prohibited during the proctored AI Mock Interview.
+      </p>
+      <div class="proctor-strike-pill">
+        Violation: <strong id="modalViolationCount" style="color: #ef4444;">1 of 3</strong>
       </div>
-      <p class="muted" style="font-size: 13px; margin: 10px 0 20px;">Please stay focused on this window. Violations are logged on your Performance Report.</p>
-      <button class="btn primary btn-large" id="btnDismissWarning" style="width: 100%;">I Understand & Return to Interview</button>
+      <p class="muted" style="font-size: 13px; margin: 15px 0 25px; color: #94a3b8;">
+        Please return to the interview immediately. Violations are logged on your final performance assessment report.
+      </p>
+      <button class="btn primary btn-large" id="btnDismissWarning" style="width: 100%; font-size: 16px;">
+        🔒 Return & Re-enter Fullscreen Interview
+      </button>
     </div>
   </div>
 
