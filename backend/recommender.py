@@ -46,17 +46,89 @@ def calculate_similarity(user_skills, required_skills):
     matrix = vectorizer.fit_transform(corpus)
     return float(cosine_similarity(matrix[0:1], matrix[1:2])[0][0])
 
+ROLE_ALIASES = {
+    "software developer": "Software Engineer",
+    "software dev": "Software Engineer",
+    "developer": "Software Engineer",
+    "programmer": "Software Engineer",
+    "coder": "Software Engineer",
+    "full stack developer": "Software Engineer",
+    "full stack engineer": "Software Engineer",
+    "fullstack developer": "Software Engineer",
+    "fullstack engineer": "Software Engineer",
+    "full stack": "Software Engineer",
+    "frontend engineer": "Frontend Developer",
+    "front end developer": "Frontend Developer",
+    "front-end developer": "Frontend Developer",
+    "frontend dev": "Frontend Developer",
+    "backend engineer": "Backend Developer",
+    "back end developer": "Backend Developer",
+    "back-end developer": "Backend Developer",
+    "backend dev": "Backend Developer",
+    "ai engineer": "Machine Learning Engineer",
+    "ml engineer": "Machine Learning Engineer",
+    "ai/ml engineer": "Machine Learning Engineer",
+    "machine learning": "Machine Learning Engineer",
+    "data science": "Data Scientist",
+    "data analytics": "Data Analyst",
+    "business analyst": "Data Analyst",
+    "bi analyst": "Data Analyst",
+    "cloud architect": "Cloud Engineer",
+    "cloud": "Cloud Engineer",
+    "aws engineer": "Cloud Engineer",
+    "devops": "DevOps Engineer",
+    "site reliability engineer": "DevOps Engineer",
+    "sre": "DevOps Engineer",
+    "security analyst": "Cybersecurity Analyst",
+    "cyber security": "Cybersecurity Analyst",
+    "cybersecurity": "Cybersecurity Analyst",
+    "ui designer": "UI/UX Designer",
+    "ux designer": "UI/UX Designer",
+    "ui/ux": "UI/UX Designer",
+    "product designer": "UI/UX Designer",
+    "servicenow": "ServiceNow Developer"
+}
+
+def resolve_role(target_role, roles_df):
+    clean = str(target_role or "").lower().strip()
+    if not clean:
+        return roles_df.iloc[0]
+
+    # 1. Exact match
+    matched = roles_df[roles_df["job_role"].str.lower().str.strip() == clean]
+    if not matched.empty:
+        return matched.iloc[0]
+
+    # 2. Alias match
+    if clean in ROLE_ALIASES:
+        alias_role = ROLE_ALIASES[clean]
+        matched = roles_df[roles_df["job_role"].str.lower().str.strip() == alias_role.lower().strip()]
+        if not matched.empty:
+            return matched.iloc[0]
+
+    # 3. Substring match
+    for _, r in roles_df.iterrows():
+        r_name = r["job_role"].lower()
+        if r_name in clean or clean in r_name:
+            return r
+
+    # 4. Keyword token matching
+    tokens = set(clean.split())
+    for _, r in roles_df.iterrows():
+        r_tokens = set(r["job_role"].lower().split())
+        if tokens & r_tokens:
+            return r
+
+    # 5. Fallback to Software Engineer or first role
+    sw = roles_df[roles_df["job_role"].str.lower().str.contains("software engineer")]
+    if not sw.empty:
+        return sw.iloc[0]
+    return roles_df.iloc[0]
+
 def analyze_profile(target_role, user_skills, education="", experience=0, resume_text=""):
     roles, certs, resources = load_data()
 
-    role_rows = roles[
-        roles["job_role"].str.lower().str.strip() == target_role.lower().strip()
-    ]
-
-    if role_rows.empty:
-        raise ValueError("Job role not found in dataset.")
-
-    role = role_rows.iloc[0]
+    role = resolve_role(target_role, roles)
     required = split_skills(role["required_skills"])
     optional = split_skills(role["optional_skills"])
 
@@ -95,7 +167,7 @@ def analyze_profile(target_role, user_skills, education="", experience=0, resume
     )
 
     role_certs = certs[
-        certs["job_role"].str.lower().str.strip() == target_role.lower().strip()
+        certs["job_role"].str.lower().str.strip() == role["job_role"].lower().strip()
     ].to_dict(orient="records")
 
     recommendations = []

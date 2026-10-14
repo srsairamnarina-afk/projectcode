@@ -377,35 +377,39 @@
     align-items: center;
     background: #1e1e24;
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 40px;
-    padding: 10px 24px;
+    border-radius: 20px;
+    padding: 12px 24px;
     margin-top: auto;
 }
 
 .meet-dock-left {
     display: flex;
     align-items: center;
+    min-width: 180px;
 }
 .dock-role-text {
     font-size: 14px;
-    font-weight: 600;
-    color: #cbd5e1;
+    font-weight: 500;
+    color: #e8eaed;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .meet-dock-center {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 }
 
-/* Circular Meet Buttons */
+/* Circular Meet Buttons - Google Meet Design */
 .meet-btn {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: #3c4043;
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
+    border: none;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -419,17 +423,27 @@
     transform: scale(1.05);
 }
 
-.meet-btn-icon { font-size: 20px; }
+.meet-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.meet-btn-icon svg {
+    display: block;
+    pointer-events: none;
+}
 
 /* Tooltip on Hover */
 .meet-btn-tooltip {
     position: absolute;
-    bottom: 58px;
+    bottom: 54px;
     left: 50%;
     transform: translateX(-50%);
     background: #202124;
-    color: white;
-    padding: 4px 10px;
+    color: #f1f3f4;
+    padding: 5px 12px;
     border-radius: 6px;
     font-size: 11px;
     font-weight: 500;
@@ -438,30 +452,36 @@
     pointer-events: none;
     transition: opacity 0.2s ease;
     border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 10;
 }
 .meet-btn:hover .meet-btn-tooltip { opacity: 1; }
 
 /* Mic Active vs Muted */
 .meet-btn.mic-btn.active {
     background: #1a73e8;
-    border-color: #8ab4f8;
+    color: #ffffff;
     animation: micRipple 1.8s infinite;
 }
-.meet-btn.mic-btn.muted {
+.meet-btn.mic-btn.muted,
+.meet-btn.cam-btn.muted {
     background: #ea4335;
+    color: #ffffff;
 }
 
 @keyframes micRipple {
     0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.6); }
-    70% { box-shadow: 0 0 0 12px rgba(26, 115, 232, 0); }
+    70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
     100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
 }
 
-/* Red Hangup Call Button */
+/* Red Hangup Call Button - Google Meet Oval Pill */
 .meet-btn.hangup-btn {
     background: #ea4335;
-    width: 60px;
-    border-radius: 30px;
+    width: 58px;
+    height: 44px;
+    border-radius: 22px;
+    color: #ffffff;
 }
 .meet-btn.hangup-btn:hover {
     background: #d93025;
@@ -470,24 +490,24 @@
 
 /* Submit Answer Pill Button */
 .meet-submit-btn {
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    background: linear-gradient(135deg, #1a73e8, #2563eb);
     color: white;
     border: none;
-    border-radius: 30px;
-    padding: 0 20px;
-    height: 48px;
-    font-size: 14px;
-    font-weight: 700;
+    border-radius: 22px;
+    padding: 0 18px;
+    height: 44px;
+    font-size: 13px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 4px 14px rgba(26, 115, 232, 0.4);
     transition: all 0.2s ease;
 }
 .meet-submit-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+    box-shadow: 0 6px 18px rgba(26, 115, 232, 0.6);
 }
 .meet-submit-btn:disabled {
     background: #374151;
@@ -499,13 +519,89 @@
 .meet-dock-right {
     display: flex;
     align-items: center;
+    gap: 10px;
+    min-width: 180px;
+    justify-content: flex-end;
+}
+.meet-dock-mini-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: #e8eaed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.meet-dock-mini-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 .dock-secure-tag {
     font-size: 12px;
-    color: #94a3b8;
-    background: rgba(255,255,255,0.05);
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.25);
     padding: 4px 10px;
     border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+/* Google Meet Tile Indicators (Top-Right of Tiles) */
+.meet-tile-indicator {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(32, 33, 36, 0.85);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 6;
+    color: #e8eaed;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+.meet-tile-indicator.active,
+.sarah-tile.speaking-active .meet-tile-indicator {
+    background: #1a73e8;
+    color: white;
+    box-shadow: 0 0 12px rgba(26, 115, 232, 0.6);
+}
+.meet-tile-indicator.muted {
+    background: #ea4335;
+    color: white;
+}
+.mini-wave-bars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 12px;
+}
+.mini-wave-bars span {
+    width: 2.5px;
+    height: 4px;
+    background: white;
+    border-radius: 1px;
+    transition: height 0.2s;
+}
+.sarah-tile.speaking-active .mini-wave-bars span {
+    animation: miniWave 0.7s infinite ease-in-out;
+}
+.sarah-tile.speaking-active .mini-wave-bars span:nth-child(2) { animation-delay: 0.15s; }
+.sarah-tile.speaking-active .mini-wave-bars span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes miniWave {
+    0%, 100% { height: 4px; }
+    50% { height: 13px; }
 }
 
 /* =========================================
@@ -618,3 +714,55 @@ body.proctoring-active .meet-room-container {
         border-radius: 24px;
     }
 }
+
+/* Online Video Interview Badges */
+.tile-live-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.badge-rec-dot {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #ef4444;
+    animation: livePulse 1.2s infinite;
+}
+
+.sarah-img-frame {
+    position: relative;
+}
+
+.sarah-cam-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: #2563eb;
+    border: 2px solid #1a202c;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    z-index: 4;
+}
+

@@ -6,63 +6,77 @@
   <title>SkillBridge AI | Certifications</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/nav.js"></script>
+  <script src="/js/career-data.js"></script>
 </head>
 <body>
 <main class="results-page">
   <div class="section-heading text-center" style="margin-top: 20px;">
     <p class="eyebrow">STEP 3: VALIDATION</p>
     <h1 class="gradient-text">Recommended Certifications</h1>
-    <p class="subtitle">Validate your skills to stand out to employers hiring for <strong id="roleTitle">...</strong></p>
+    <p class="subtitle">Validate your skills to stand out to employers hiring for <strong id="roleTitle">...</strong> <a href="/skill-analyzer" style="font-size: 13px; margin-left: 8px; color: var(--primary); text-decoration: underline;">(Change / Upload Resume)</a></p>
   </div>
 
   <section class="result-card glass-panel full-width">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; flex-wrap: wrap; gap: 10px;">
       <h2 style="margin: 0;">🎓 Official Certifications</h2>
       <div>
-        <select style="width: auto; padding: 8px 12px; font-size: 14px;">
-          <option>All Statuses</option>
-          <option>Recommended</option>
-          <option>In Progress</option>
-          <option>Completed</option>
+        <select id="certFilter" style="width: auto; padding: 8px 12px; font-size: 14px;">
+          <option value="all">All Certifications</option>
+          <option value="beginner">Beginner Level</option>
+          <option value="intermediate">Intermediate Level</option>
+          <option value="advanced">Advanced Level</option>
         </select>
       </div>
     </div>
     
-    <div id="certifications" class="resource-grid"></div>
+    <div id="certifications" class="resource-grid">Loading official industry certifications...</div>
   </section>
 
-  <div class="text-center" style="margin-top: 40px;">
+  <div class="text-center" style="margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+    <a href="/learning-roadmap" class="btn outline-btn btn-large">← Back to Roadmap</a>
     <a href="/companies" class="btn primary btn-large">View Companies & Jobs →</a>
   </div>
 </main>
 
 <script>
-const data = JSON.parse(sessionStorage.getItem("skillbridgeResult") || "null");
+(async function init() {
+  const data = await getCareerData();
 
-if (!data) {
-  window.location.href = "/skill-analyzer";
-}
+  document.getElementById("roleTitle").textContent = data.job_role;
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
-}
+  let allCerts = data.certifications || [];
+  const certContainer = document.getElementById("certifications");
 
-document.getElementById("roleTitle").textContent = data.job_role;
+  function renderCerts(filter = "all") {
+    let filtered = allCerts;
+    if (filter !== "all") {
+      filtered = allCerts.filter(c => (c.level || "").toLowerCase() === filter.toLowerCase());
+    }
 
-document.getElementById("certifications").innerHTML =
-  data.certifications.map(c => `
-    <div class="resource-box">
-      <div style="display: flex; justify-content: space-between; align-items: start;">
-        <span class="badge">${escapeHtml(c.level)}</span>
-        <span style="font-size: 12px; font-weight: bold; color: var(--primary); background: rgba(37,99,235,0.1); padding: 4px 8px; border-radius: 4px;">Recommended</span>
+    if (!filtered || filtered.length === 0) {
+      certContainer.innerHTML = "<p class='muted'>No certifications matching this criteria for this role.</p>";
+      return;
+    }
+
+    certContainer.innerHTML = filtered.map(c => `
+      <div class="resource-box">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <span class="badge">${escapeHtml(c.level || 'Standard')}</span>
+          <span style="font-size: 12px; font-weight: bold; color: var(--primary); background: rgba(37,99,235,0.1); padding: 4px 8px; border-radius: 4px;">Recommended</span>
+        </div>
+        <h3 style="margin-top: 10px;">${escapeHtml(c.certification)}</h3>
+        <p class="provider">🏢 ${escapeHtml(c.provider)}</p>
+        <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="btn primary small-btn mt-auto">View Certification</a>
       </div>
-      <h3>${escapeHtml(c.certification)}</h3>
-      <p class="provider">🏢 ${escapeHtml(c.provider)}</p>
-      <a href="${c.url}" target="_blank" rel="noopener" class="btn primary small-btn mt-auto">View Certification</a>
-    </div>
-  `).join("") || "<p class='muted'>No certification mapped yet for this role.</p>";
+    `).join("");
+  }
+
+  renderCerts();
+
+  document.getElementById("certFilter").addEventListener("change", (e) => {
+    renderCerts(e.target.value);
+  });
+})();
 </script>
 </body>
 </html>

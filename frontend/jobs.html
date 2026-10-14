@@ -6,22 +6,23 @@
   <title>SkillBridge AI | Companies & Jobs</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/nav.js"></script>
+  <script src="/js/career-data.js"></script>
 </head>
 <body>
 <main class="results-page">
   <div class="section-heading text-center" style="margin-top: 20px;">
     <p class="eyebrow">STEP 4: GET HIRED</p>
     <h1 class="gradient-text">Companies & Jobs</h1>
-    <p class="subtitle">Based on your skills, target career, and skill gaps.</p>
+    <p class="subtitle">Curated job openings matching your profile in <strong id="roleTitle">...</strong> <a href="/skill-analyzer" style="font-size: 13px; margin-left: 8px; color: var(--primary); text-decoration: underline;">(Change / Upload Resume)</a></p>
   </div>
 
   <section class="job-readiness-banner glass-panel">
     <div>
       <h2 style="font-size: 24px; margin-bottom: 5px;">Career Readiness: <span id="readinessScore">0</span>% Ready</h2>
-      <p style="color: var(--text-main); font-weight: 500; font-size: 15px;" id="readinessAdvice">Complete your roadmap to improve your readiness.</p>
+      <p style="color: var(--text-main); font-weight: 500; font-size: 15px;" id="readinessAdvice">Calculating your job readiness...</p>
     </div>
-    <div class="circular-progress" style="width: 100px; height: 100px; margin: 0;">
-      <svg viewBox="0 0 100 100">
+    <div class="circular-progress" style="width: 100px; height: 100px; margin: 0; position: relative;">
+      <svg viewBox="0 0 100 100" width="100" height="100">
         <circle class="bg" cx="50" cy="50" r="45"></circle>
         <circle class="progress" id="scoreSvgCircle" cx="50" cy="50" r="45" stroke-dasharray="282.7" stroke-dashoffset="282.7"></circle>
       </svg>
@@ -29,118 +30,130 @@
     </div>
   </section>
 
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;" id="jobsContainer">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 25px;" id="jobsContainer">
     <!-- Jobs will be injected here by JS -->
+  </div>
+
+  <div class="text-center" style="margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+    <a href="/certifications" class="btn outline-btn btn-large">← Back to Certifications</a>
+    <a href="/interview" class="btn primary btn-large">Practice AI Mock Interview →</a>
   </div>
 </main>
 
 <script>
-const data = JSON.parse(sessionStorage.getItem("skillbridgeResult") || "null");
+(async function init() {
+  const data = await getCareerData();
 
-if (!data) {
-  window.location.href = "/skill-analyzer";
-}
+  const roleTitleEl = document.getElementById("roleTitle");
+  if (roleTitleEl) roleTitleEl.textContent = data.job_role;
 
-document.getElementById("readinessScore").textContent = data.readiness_score;
-document.getElementById("readinessText").textContent = data.readiness_score + "%";
+  const readiness = Math.round(data.readiness_score || 50);
+  document.getElementById("readinessScore").textContent = readiness;
+  document.getElementById("readinessText").textContent = readiness + "%";
 
-if (data.readiness_score >= 80) {
-  document.getElementById("readinessAdvice").innerHTML = `You are highly competitive for <strong>${data.job_role}</strong> roles! Start applying.`;
-} else if (data.readiness_score >= 60) {
-  document.getElementById("readinessAdvice").innerHTML = `You're getting close. Complete your roadmap to improve your match for <strong>${data.job_role}</strong>.`;
-} else {
-  document.getElementById("readinessAdvice").innerHTML = `Focus on acquiring the missing skills in your roadmap to target <strong>${data.job_role}</strong>.`;
-}
+  if (readiness >= 80) {
+    document.getElementById("readinessAdvice").innerHTML = `You are highly competitive for <strong>${escapeHtml(data.job_role)}</strong> roles! Start applying.`;
+  } else if (readiness >= 60) {
+    document.getElementById("readinessAdvice").innerHTML = `You're getting close. Complete your roadmap to improve your match for <strong>${escapeHtml(data.job_role)}</strong>.`;
+  } else {
+    document.getElementById("readinessAdvice").innerHTML = `Focus on acquiring the missing skills in your roadmap to target <strong>${escapeHtml(data.job_role)}</strong>.`;
+  }
 
-setTimeout(() => {
-  const circle = document.getElementById("scoreSvgCircle");
-  const radius = circle.r.baseVal.value;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (data.readiness_score / 100) * circumference;
-  circle.style.strokeDasharray = `${circumference} ${circumference}`;
-  circle.style.strokeDashoffset = offset;
-  
-  if(data.readiness_score < 40) circle.style.stroke = "#ef4444";
-  else if(data.readiness_score < 70) circle.style.stroke = "#f59e0b";
-  else circle.style.stroke = "#10b981";
-}, 100);
-
-// Generate Mock Jobs based on Target Role
-const jobRolesMap = {
-  "Software Developer": ["Frontend Developer", "Backend Developer", "Junior Software Engineer", "Full Stack Developer"],
-  "Data Analyst": ["Junior Data Analyst", "Business Intelligence Analyst", "Data Reporting Analyst"],
-  "AI/ML Engineer": ["Junior Machine Learning Engineer", "AI Software Engineer", "Data Scientist", "NLP Engineer"],
-  "Cloud Engineer": ["Junior Cloud Architect", "AWS Support Engineer", "DevOps Engineer"]
-};
-
-// Fallback roles if the specific role isn't mapped
-const targetRole = data.job_role;
-let possibleTitles = jobRolesMap[targetRole];
-if (!possibleTitles) {
-  possibleTitles = [`Junior ${targetRole}`, targetRole, `Associate ${targetRole}`];
-}
-
-const mockCompanies = [
-  { name: "Google", logo: "G", color: "#4285F4", url: "https://careers.google.com/" },
-  { name: "Microsoft", logo: "M", color: "#00A4EF", url: "https://careers.microsoft.com/" },
-  { name: "Amazon", logo: "a", color: "#FF9900", url: "https://www.amazon.jobs/" },
-  { name: "Apple", logo: "A", color: "#A2AAAD", url: "https://jobs.apple.com/" },
-  { name: "Meta", logo: "M", color: "#0668E1", url: "https://www.metacareers.com/" },
-  { name: "IBM", logo: "I", color: "#0530AD", url: "https://www.ibm.com/careers/" }
-];
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
-}
-
-const container = document.getElementById("jobsContainer");
-
-// Render 4 mock jobs
-for (let i = 0; i < 4; i++) {
-  const company = mockCompanies[Math.floor(Math.random() * mockCompanies.length)];
-  const jobTitle = possibleTitles[i % possibleTitles.length];
-  
-  // Create a slight variation in skill match per job for realism
-  const variance = Math.floor(Math.random() * 15) - 5; // -5 to +10
-  let jobMatch = Math.min(100, Math.max(0, data.skill_score + variance));
-  
-  const matchedHTML = data.matched_skills.slice(0, 3).map(s => `<span style="color: var(--success); margin-right: 10px; font-size: 14px;">✓ ${escapeHtml(s)}</span>`).join("");
-  const missingHTML = data.missing_skills.slice(0, 2).map(s => `<span style="color: var(--danger); margin-right: 10px; font-size: 14px;">⚠️ ${escapeHtml(s)}</span>`).join("");
-
-  const jobCard = `
-    <div class="job-card">
-      <div class="job-header">
-        <div>
-          <h3 style="font-size: 20px; margin-bottom: 5px;">${escapeHtml(jobTitle)}</h3>
-          <p class="muted" style="font-weight: 600; font-size: 16px;">${escapeHtml(company.name)}</p>
-        </div>
-        <div class="company-logo" style="color: ${company.color}; border-color: ${company.color}40; background: ${company.color}10;">${company.logo}</div>
-      </div>
+  setTimeout(() => {
+    const circle = document.getElementById("scoreSvgCircle");
+    if (circle) {
+      const radius = circle.r.baseVal.value;
+      const circumference = radius * 2 * Math.PI;
+      const offset = circumference - (readiness / 100) * circumference;
+      circle.style.strokeDasharray = `${circumference} ${circumference}`;
+      circle.style.strokeDashoffset = offset;
       
-      <div style="display: flex; align-items: center; margin: 20px 0;">
-        <strong style="color: var(--primary); font-size: 18px;">${Math.round(jobMatch)}% Match</strong>
-        <div class="progress-bar-container">
-          <div class="progress-bar-fill" style="width: ${jobMatch}%;"></div>
+      if(readiness < 40) circle.style.stroke = "#ef4444";
+      else if(readiness < 70) circle.style.stroke = "#f59e0b";
+      else circle.style.stroke = "#10b981";
+    }
+  }, 100);
+
+  // Generate Jobs based on Target Role
+  const jobRolesMap = {
+    "Software Engineer": ["Junior Software Engineer", "Full Stack Developer", "Backend Developer", "Systems Engineer"],
+    "Software Developer": ["Frontend Developer", "Backend Developer", "Junior Software Engineer", "Full Stack Developer"],
+    "Web Developer": ["Frontend Web Developer", "Full Stack Web Developer", "UI Developer"],
+    "Frontend Developer": ["Frontend Engineer", "React Developer", "UI Developer"],
+    "Backend Developer": ["Backend Engineer", "API Engineer", "Python/Java Developer"],
+    "Data Analyst": ["Junior Data Analyst", "Business Intelligence Analyst", "Data Reporting Analyst"],
+    "Data Scientist": ["Associate Data Scientist", "Data Science Specialist", "Quantitative Analyst"],
+    "Machine Learning Engineer": ["Junior Machine Learning Engineer", "AI Software Engineer", "Data Scientist", "NLP Engineer"],
+    "Cloud Engineer": ["Junior Cloud Architect", "AWS Support Engineer", "DevOps Engineer"],
+    "DevOps Engineer": ["DevOps Engineer", "Site Reliability Engineer", "CI/CD Infrastructure Engineer"],
+    "Cybersecurity Analyst": ["Information Security Analyst", "SOC Analyst Tier 1", "Cyber Defense Analyst"],
+    "UI/UX Designer": ["Product Designer", "Junior UX Designer", "Interaction Designer"]
+  };
+
+  const targetRole = data.job_role;
+  let possibleTitles = jobRolesMap[targetRole];
+  if (!possibleTitles) {
+    possibleTitles = [`Junior ${targetRole}`, targetRole, `Associate ${targetRole}`, `Lead ${targetRole}`];
+  }
+
+  const mockCompanies = [
+    { name: "Google", logo: "G", color: "#4285F4", url: "https://careers.google.com/" },
+    { name: "Microsoft", logo: "M", color: "#00A4EF", url: "https://careers.microsoft.com/" },
+    { name: "Amazon", logo: "a", color: "#FF9900", url: "https://www.amazon.jobs/" },
+    { name: "Apple", logo: "A", color: "#A2AAAD", url: "https://jobs.apple.com/" },
+    { name: "Meta", logo: "M", color: "#0668E1", url: "https://www.metacareers.com/" },
+    { name: "IBM", logo: "I", color: "#0530AD", url: "https://www.ibm.com/careers/" }
+  ];
+
+  const container = document.getElementById("jobsContainer");
+  container.innerHTML = "";
+
+  // Render 4 mock jobs
+  for (let i = 0; i < 4; i++) {
+    const company = mockCompanies[i % mockCompanies.length];
+    const jobTitle = possibleTitles[i % possibleTitles.length];
+    
+    const variance = (i * 3) - 3;
+    let jobMatch = Math.min(98, Math.max(35, Math.round((data.skill_score || 50) + variance)));
+    
+    const matchedList = data.matched_skills || [];
+    const missingList = data.missing_skills || [];
+    const matchedHTML = matchedList.slice(0, 3).map(s => `<span style="color: var(--success); margin-right: 10px; font-size: 13px; font-weight: 600;">✓ ${escapeHtml(s)}</span>`).join("");
+    const missingHTML = missingList.slice(0, 2).map(s => `<span style="color: var(--danger); margin-right: 10px; font-size: 13px; font-weight: 600;">⚠ ${escapeHtml(s)}</span>`).join("");
+
+    const jobCard = `
+      <div class="job-card">
+        <div class="job-header">
+          <div>
+            <h3 style="font-size: 19px; margin-bottom: 4px;">${escapeHtml(jobTitle)}</h3>
+            <p class="muted" style="font-weight: 600; font-size: 15px;">${escapeHtml(company.name)}</p>
+          </div>
+          <div class="company-logo" style="color: ${company.color}; border-color: ${company.color}40; background: ${company.color}10;">${company.logo}</div>
         </div>
-      </div>
+        
+        <div style="display: flex; align-items: center; margin: 18px 0;">
+          <strong style="color: var(--primary); font-size: 17px; margin-right: 12px; white-space: nowrap;">${jobMatch}% Match</strong>
+          <div class="progress-bar-container" style="flex: 1; margin: 0;">
+            <div class="progress-bar-fill" style="width: ${jobMatch}%;"></div>
+          </div>
+        </div>
 
-      <div style="margin-bottom: 20px;">
-        <p style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Your Matching Skills:</p>
-        <div>${matchedHTML || "<span class='muted'>None</span>"}</div>
-      </div>
+        <div style="margin-bottom: 15px;">
+          <p style="font-size: 12px; font-weight: 700; margin-bottom: 6px; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Your Matching Skills:</p>
+          <div>${matchedHTML || "<span class='muted'>None recorded</span>"}</div>
+        </div>
 
-      <div style="margin-bottom: 25px;">
-        <p style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Skills Still Needed:</p>
-        <div>${missingHTML || "<span class='muted'>None</span>"}</div>
-      </div>
+        <div style="margin-bottom: 20px;">
+          <p style="font-size: 12px; font-weight: 700; margin-bottom: 6px; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Skills to Learn:</p>
+          <div>${missingHTML || "<span class='muted'>All key skills matched!</span>"}</div>
+        </div>
 
-      <a href="${company.url}" target="_blank" rel="noopener noreferrer" class="btn outline-btn full">View Job Application</a>
-    </div>
-  `;
-  container.innerHTML += jobCard;
-}
+        <a href="${company.url}" target="_blank" rel="noopener noreferrer" class="btn outline-btn full">View Job Application</a>
+      </div>
+    `;
+    container.innerHTML += jobCard;
+  }
+})();
 </script>
 </body>
 </html>

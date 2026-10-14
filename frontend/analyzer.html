@@ -109,6 +109,7 @@
         throw new Error(result.error || "Unable to analyze profile.");
       }
 
+      localStorage.setItem("skillbridgeResult", JSON.stringify(result));
       sessionStorage.setItem("skillbridgeResult", JSON.stringify(result));
       window.location.href = "/skill-gap"; // Route directly to gap analysis
     } catch (error) {

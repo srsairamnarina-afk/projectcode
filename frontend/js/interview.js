@@ -27,6 +27,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btnSpeak = document.getElementById("btnSpeak");
     const btnToggleCam = document.getElementById("btnToggleCam");
     const btnRespeak = document.getElementById("btnRespeak");
+    const btnRaiseHand = document.getElementById("btnRaiseHand");
+    const btnToggleCaptions = document.getElementById("btnToggleCaptions");
+    const btnShareScreen = document.getElementById("btnShareScreen");
+    const btnInfo = document.getElementById("btnInfo");
+    const btnPeople = document.getElementById("btnPeople");
+    const btnChat = document.getElementById("btnChat");
     const btnSubmitAnswer = document.getElementById("btnSubmitAnswer");
     const btnEndEarly = document.getElementById("btnEndEarly");
     const btnTestMic = document.getElementById("btnTestMic");
@@ -112,14 +118,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (videoStream) {
                 videoStream.getVideoTracks().forEach(t => t.enabled = isCamOn);
             }
+            const camIcon = document.getElementById("camIcon");
+            const camTooltip = document.getElementById("camTooltip");
             if (isCamOn) {
                 interviewVideo.style.display = "block";
                 if (camOffPlaceholder) camOffPlaceholder.style.display = "none";
                 btnToggleCam.style.background = "#3c4043";
+                if (camIcon) {
+                    camIcon.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>`;
+                }
+                if (camTooltip) camTooltip.textContent = "Turn camera off";
             } else {
                 interviewVideo.style.display = "none";
                 if (camOffPlaceholder) camOffPlaceholder.style.display = "flex";
                 btnToggleCam.style.background = "#ea4335";
+                if (camIcon) {
+                    camIcon.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2zM15 16H6c-.55 0-1-.45-1-1V8.27L14.73 18H15v-2z"/></svg>`;
+                }
+                if (camTooltip) camTooltip.textContent = "Turn camera on";
             }
         });
     }
@@ -345,18 +361,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function updateMicState(active) {
+        const speakIcon = document.getElementById("speakIcon");
+        const speakText = document.getElementById("speakText");
+        const candidateMicBadge = document.getElementById("candidateMicBadge");
+        
         if (active) {
             btnSpeak.classList.add("active");
             btnSpeak.classList.remove("muted");
-            document.getElementById("speakIcon").textContent = "🎙️";
-            document.getElementById("speakText").textContent = "Done Speaking";
-            if (userMicIcon) userMicIcon.textContent = "🎙️";
+            if (speakIcon) {
+                speakIcon.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+            }
+            if (speakText) speakText.textContent = "Turn off mic";
+            if (candidateMicBadge) {
+                candidateMicBadge.classList.add("active");
+                candidateMicBadge.classList.remove("muted");
+            }
         } else {
             btnSpeak.classList.remove("active");
             btnSpeak.classList.add("muted");
-            document.getElementById("speakIcon").textContent = "🎤";
-            document.getElementById("speakText").textContent = "Speak Answer";
-            if (userMicIcon) userMicIcon.textContent = "🎤";
+            if (speakIcon) {
+                speakIcon.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-1.02.9-2.18.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.24-5.3-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c1.33-.19 2.53-.78 3.52-1.61l3.2 3.2 1.27-1.27L4.27 3z"/></svg>`;
+            }
+            if (speakText) speakText.textContent = "Turn on mic";
+            if (candidateMicBadge) {
+                candidateMicBadge.classList.remove("active");
+                candidateMicBadge.classList.add("muted");
+            }
         }
     }
 
@@ -369,19 +399,86 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Re-speak Button Click
-    if (btnRespeak) {
-        btnRespeak.addEventListener("click", () => {
+    // Google Meet Raise Hand (Repeat Question / Re-speak)
+    if (btnRaiseHand) {
+        btnRaiseHand.addEventListener("click", () => {
             stopListening();
             baseTranscript = "";
             interimTranscript = "";
             if (transcriptBox) transcriptBox.value = "";
             if (candidateLiveTranscript) {
-                candidateLiveTranscript.innerHTML = `<span style="color: #34d399;">🎙️ Cleared. Speak your new answer now...</span>`;
+                candidateLiveTranscript.innerHTML = `<span style="color: #60a5fa;">Hand raised. Sarah will repeat the question...</span>`;
             }
             btnSubmitAnswer.disabled = true;
-            btnRespeak.style.display = "none";
-            startListening();
+            
+            // Re-read current question from assistant
+            const assistantMsgs = conversationHistory.filter(m => m.role === "assistant");
+            if (assistantMsgs.length > 0) {
+                const lastQ = assistantMsgs[assistantMsgs.length - 1].content;
+                speakAI(lastQ, () => {
+                    startListening();
+                });
+            } else {
+                startListening();
+            }
+        });
+    }
+
+    // Google Meet Captions Toggle ([CC])
+    let captionsEnabled = true;
+    if (btnToggleCaptions) {
+        btnToggleCaptions.addEventListener("click", () => {
+            captionsEnabled = !captionsEnabled;
+            const sarahCaptions = document.getElementById("sarahCaptionsOverlay");
+            const candidateCaptions = document.getElementById("candidateCaptionsOverlay");
+            if (sarahCaptions) sarahCaptions.style.display = captionsEnabled ? "block" : "none";
+            if (candidateCaptions) candidateCaptions.style.display = captionsEnabled ? "block" : "none";
+            
+            if (captionsEnabled) {
+                btnToggleCaptions.classList.add("active");
+                btnToggleCaptions.style.background = "#8ab4f8";
+                btnToggleCaptions.style.color = "#202124";
+            } else {
+                btnToggleCaptions.classList.remove("active");
+                btnToggleCaptions.style.background = "#3c4043";
+                btnToggleCaptions.style.color = "#ffffff";
+            }
+        });
+    }
+
+    // Google Meet Screen Sharing
+    if (btnShareScreen) {
+        btnShareScreen.addEventListener("click", async () => {
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    interviewVideo.srcObject = screenStream;
+                    btnShareScreen.style.background = "#1a73e8";
+                    screenStream.getVideoTracks()[0].onended = () => {
+                        if (videoStream) interviewVideo.srcObject = videoStream;
+                        btnShareScreen.style.background = "#3c4043";
+                    };
+                }
+            } catch (err) {
+                console.log("Screen share cancelled:", err);
+            }
+        });
+    }
+
+    // Right Dock Buttons (Info, People, Chat)
+    if (btnInfo) {
+        btnInfo.addEventListener("click", () => {
+            alert(`Meeting Details:\nRole: ${targetRole}\nProctored AI Technical Interview`);
+        });
+    }
+    if (btnPeople) {
+        btnPeople.addEventListener("click", () => {
+            alert(`Participants in call (2):\n1. Sarah (Technical Interviewer)\n2. ${candidateName} (Candidate - You)`);
+        });
+    }
+    if (btnChat) {
+        btnChat.addEventListener("click", () => {
+            alert(`In-Call Messages / Transcript:\nAll spoken responses are automatically transcribed in real time.`);
         });
     }
 
@@ -432,7 +529,75 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // 5. Female Voice AI Text-To-Speech (Sarah)
+    // 5. Consistent Female Voice AI Text-To-Speech (Sarah)
+    let lockedFemaleVoice = null;
+
+    const MALE_VOICE_NAMES = [
+        "alex", "fred", "daniel", "tom", "bruce", "ralph", "junior", "albert", 
+        "george", "guy", "mark", "paul", "richard", "james", "john", "michael", 
+        "william", "joseph", "charles", "edward", "david", "male", "oliver", "rishi"
+    ];
+
+    const PREFERRED_FEMALE_NAMES = [
+        "samantha", "victoria", "karen", "moira", "tessa", "fiona", "ava", 
+        "allison", "susan", "jenny", "aria", "zira", "serena", "kate", 
+        "emma", "stephanie", "zoe", "claire", "hazel", "alice", "olivia", "emily"
+    ];
+
+    function getLockedFemaleVoice() {
+        if (lockedFemaleVoice) return lockedFemaleVoice;
+        if (!('speechSynthesis' in window)) return null;
+
+        const voices = window.speechSynthesis.getVoices();
+        if (!voices || voices.length === 0) return null;
+
+        // 1. Check known high-quality English female names
+        for (const preferred of PREFERRED_FEMALE_NAMES) {
+            const match = voices.find(v => {
+                const name = (v.name || "").toLowerCase();
+                const lang = (v.lang || "").toLowerCase();
+                return lang.startsWith("en") && name.includes(preferred);
+            });
+            if (match) {
+                lockedFemaleVoice = match;
+                return match;
+            }
+        }
+
+        // 2. Look for any English voice with "female" in its name
+        const explicitFemale = voices.find(v => {
+            const name = (v.name || "").toLowerCase();
+            const lang = (v.lang || "").toLowerCase();
+            return lang.startsWith("en") && name.includes("female") && !name.includes("male");
+        });
+        if (explicitFemale) {
+            lockedFemaleVoice = explicitFemale;
+            return explicitFemale;
+        }
+
+        // 3. Look for any English voice that is strictly NOT in the male name list
+        const nonMale = voices.find(v => {
+            const name = (v.name || "").toLowerCase();
+            const lang = (v.lang || "").toLowerCase();
+            if (!lang.startsWith("en")) return false;
+            return !MALE_VOICE_NAMES.some(m => name.includes(m));
+        });
+        if (nonMale) {
+            lockedFemaleVoice = nonMale;
+            return nonMale;
+        }
+
+        lockedFemaleVoice = voices[0] || null;
+        return lockedFemaleVoice;
+    }
+
+    if ('speechSynthesis' in window) {
+        getLockedFemaleVoice();
+        window.speechSynthesis.onvoiceschanged = () => {
+            getLockedFemaleVoice();
+        };
+    }
+
     if (btnToggleVoice) {
         btnToggleVoice.addEventListener("click", () => {
             aiVoiceEnabled = !aiVoiceEnabled;
@@ -468,30 +633,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.rate = 0.95;
-        utterance.pitch = 1.25; // Warm, friendly female tone
+        utterance.rate = 0.98;
+        utterance.pitch = 1.18; // Warm, consistent, natural female pitch
 
-        // Select Female English Voice
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(v => 
-            v.lang.startsWith("en") && (
-                v.name.toLowerCase().includes("zira") ||
-                v.name.toLowerCase().includes("female") ||
-                v.name.toLowerCase().includes("samantha") ||
-                v.name.toLowerCase().includes("victoria") ||
-                v.name.toLowerCase().includes("karen") ||
-                v.name.toLowerCase().includes("moira") ||
-                v.name.toLowerCase().includes("fiona") ||
-                v.name.toLowerCase().includes("jenny") ||
-                v.name.toLowerCase().includes("aria") ||
-                v.name.toLowerCase().includes("serena") ||
-                v.name.toLowerCase().includes("ava") ||
-                v.name.toLowerCase().includes("emma")
-            )
-        ) || voices.find(v => v.lang.startsWith("en") && !v.name.toLowerCase().includes("david") && !v.name.toLowerCase().includes("male") && !v.name.toLowerCase().includes("george"));
-
+        // Select and lock Female English Voice for Sarah
+        const femaleVoice = getLockedFemaleVoice();
         if (femaleVoice) {
             utterance.voice = femaleVoice;
+            utterance.lang = femaleVoice.lang || "en-US";
         }
 
         utterance.onend = () => {
@@ -684,7 +833,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function updateProctorBadge() {
         if (!badgeProctor) return;
-        badgeProctor.textContent = `🛡️ Tab Lock Active: ${tabSwitchCount} / ${MAX_TAB_SWITCHES} Strikes`;
+        badgeProctor.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Tab Lock: ${tabSwitchCount} / ${MAX_TAB_SWITCHES} Strikes`;
         badgeProctor.classList.remove("warning", "danger");
         if (tabSwitchCount >= 3) {
             badgeProctor.classList.add("danger");
@@ -872,24 +1021,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     function renderReport(eval) {
         let proctoringBadgeHTML = '';
         if (tabSwitchCount === 0) {
-            proctoringBadgeHTML = `<div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 20px;">🟢</span>
+            proctoringBadgeHTML = `<div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.3); padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(16,185,129,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--success);">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
                 <div>
-                    <strong>Proctoring Integrity: Perfect Focus (Google Meet Room)</strong>
-                    <div class="muted" style="font-size: 13px;">0 tab switches detected. Full session integrity.</div>
+                    <strong>Proctoring Integrity: Perfect Focus</strong>
+                    <div class="muted" style="font-size: 13px;">0 tab switches detected. Full session integrity maintained.</div>
                 </div>
             </div>`;
         } else if (tabSwitchCount <= 2) {
-            proctoringBadgeHTML = `<div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 20px;">🟡</span>
+            proctoringBadgeHTML = `<div style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(245,158,11,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--warning);">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
                 <div>
                     <strong>Proctoring Integrity: Minor Distractions (${tabSwitchCount} Tab Switches)</strong>
                     <div class="muted" style="font-size: 13px;">Tab switching was detected during the interview session.</div>
                 </div>
             </div>`;
         } else {
-            proctoringBadgeHTML = `<div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 20px;">🔴</span>
+            proctoringBadgeHTML = `<div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); padding: 12px 18px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(239,68,68,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--danger);">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </div>
                 <div>
                     <strong>Proctoring Integrity: Flagged (${tabSwitchCount} Tab Switches)</strong>
                     <div class="muted" style="font-size: 13px;">Multiple tab switches occurred during the active interview.</div>
@@ -923,13 +1078,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         html += `</div></div><div class="grid two" style="margin-top:20px;">
             <div class="report-card">
-                <h3>✓ Strengths</h3>
+                <h3 style="color:var(--success); display:flex; align-items:center; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Strengths
+                </h3>
                 <ul style="margin-left: 20px;">
                     ${eval.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join("")}
                 </ul>
             </div>
-            <div class="report-card" style="border-color: var(--danger);">
-                <h3 style="color:var(--danger)">⚠ Areas to Improve</h3>
+            <div class="report-card" style="border-color: rgba(239,68,68,0.3);">
+                <h3 style="color:var(--danger); display:flex; align-items:center; gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Areas to Improve
+                </h3>
                 <ul style="margin-left: 20px;">
                     ${eval.improvements.map(s => `<li>${escapeHtml(s)}</li>`).join("")}
                 </ul>

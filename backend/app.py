@@ -1,6 +1,11 @@
 from pathlib import Path
 import os
 import uuid
+from dotenv import load_dotenv
+
+# Load environment variables from .env if present
+load_dotenv()
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -54,26 +59,34 @@ def login():
     return send_from_directory(FRONTEND_DIR, "login.html")
 
 @app.route("/skill-analyzer")
+@app.route("/analyzer")
 def analyzer():
     return send_from_directory(FRONTEND_DIR, "analyzer.html")
 
 @app.route("/skill-gap")
+@app.route("/skill-gaps")
+@app.route("/gap")
 def gap():
     return send_from_directory(FRONTEND_DIR, "gap.html")
 
 @app.route("/interview")
+@app.route("/mock-interview")
 def interview():
     return send_from_directory(FRONTEND_DIR, "interview.html")
 
 @app.route("/learning-roadmap")
+@app.route("/roadmap")
 def roadmap():
     return send_from_directory(FRONTEND_DIR, "roadmap.html")
 
 @app.route("/certifications")
+@app.route("/certification")
 def certifications():
     return send_from_directory(FRONTEND_DIR, "certifications.html")
 
 @app.route("/companies")
+@app.route("/jobs")
+@app.route("/job-matches")
 def companies():
     return send_from_directory(FRONTEND_DIR, "jobs.html")
 
@@ -182,5 +195,5 @@ def interview_transcribe_api():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
     app.run(host="0.0.0.0", port=port, debug=False)

@@ -6,59 +6,63 @@
   <title>SkillBridge AI | Learning Roadmap</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/nav.js"></script>
+  <script src="/js/career-data.js"></script>
 </head>
 <body>
 <main class="results-page">
   <div class="section-heading text-center" style="margin-top: 20px;">
     <p class="eyebrow">STEP 2: PREPARATION</p>
     <h1 class="gradient-text">Learning Roadmap</h1>
-    <p class="subtitle">Your personalized path to mastering the skills for <strong id="roleTitle">...</strong></p>
+    <p class="subtitle">Your personalized path to mastering the skills for <strong id="roleTitle">...</strong> <a href="/skill-analyzer" style="font-size: 13px; margin-left: 8px; color: var(--primary); text-decoration: underline;">(Change / Upload Resume)</a></p>
   </div>
 
   <section class="result-card glass-panel full-width">
     <h2 class="card-title">🚀 Priority Action Plan</h2>
-    <p class="muted" style="margin-bottom: 20px;" id="guidanceSummary"></p>
+    <p class="muted" style="margin-bottom: 20px;" id="guidanceSummary">Loading action plan...</p>
     <ol id="priority" class="action-list"></ol>
   </section>
 
   <section class="result-card glass-panel full-width">
     <h2 class="card-title">📚 Recommended Learning Resources</h2>
-    <div id="resources" class="resource-grid"></div>
+    <div id="resources" class="resource-grid">Loading courses and tutorials...</div>
   </section>
 
-  <div class="text-center" style="margin-top: 40px;">
+  <div class="text-center" style="margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+    <a href="/skill-gap" class="btn outline-btn btn-large">← Back to Skill Gaps</a>
     <a href="/certifications" class="btn primary btn-large">View Recommended Certifications →</a>
   </div>
 </main>
 
 <script>
-const data = JSON.parse(sessionStorage.getItem("skillbridgeResult") || "null");
+(async function init() {
+  const data = await getCareerData();
 
-if (!data) {
-  window.location.href = "/skill-analyzer";
-}
+  document.getElementById("roleTitle").textContent = data.job_role;
+  document.getElementById("guidanceSummary").textContent = data.guidance ? data.guidance.summary : "Follow the roadmap below to close your skill gaps.";
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
-}
+  const priorityEl = document.getElementById("priority");
+  if (data.guidance && data.guidance.priority_order && data.guidance.priority_order.length > 0) {
+    priorityEl.innerHTML = data.guidance.priority_order.map(x => `<li>Master <strong>${escapeHtml(x)}</strong> fundamentals and hands-on projects</li>`).join("");
+  } else if (data.missing_skills && data.missing_skills.length > 0) {
+    priorityEl.innerHTML = data.missing_skills.map(x => `<li>Learn <strong>${escapeHtml(x)}</strong> core concepts and applications</li>`).join("");
+  } else {
+    priorityEl.innerHTML = `<li>Great job! You already match the key required skills for this role.</li>`;
+  }
 
-document.getElementById("roleTitle").textContent = data.job_role;
-document.getElementById("guidanceSummary").textContent = data.guidance.summary;
-
-document.getElementById("priority").innerHTML =
-  data.guidance.priority_order.map(x => `<li>${escapeHtml(x)}</li>`).join("");
-
-document.getElementById("resources").innerHTML =
-  data.learning_recommendations.map(r => `
-    <div class="resource-box">
-      <span class="badge tag">🏷️ ${escapeHtml(r.skill)}</span>
-      <h3>${escapeHtml(r.resource_name)}</h3>
-      <p class="provider">📺 ${escapeHtml(r.provider)} • ${escapeHtml(r.resource_type)}</p>
-      <a href="${r.url}" target="_blank" rel="noopener" class="btn outline-btn small-btn mt-auto">Start Learning</a>
-    </div>
-  `).join("") || "<p class='muted'>No learning resource mapped yet.</p>";
+  const resourcesEl = document.getElementById("resources");
+  if (data.learning_recommendations && data.learning_recommendations.length > 0) {
+    resourcesEl.innerHTML = data.learning_recommendations.map(r => `
+      <div class="resource-box">
+        <span class="badge tag">🏷️ ${escapeHtml(r.skill)}</span>
+        <h3>${escapeHtml(r.resource_name)}</h3>
+        <p class="provider">📺 ${escapeHtml(r.provider)} • ${escapeHtml(r.resource_type)}</p>
+        <a href="${r.url}" target="_blank" rel="noopener" class="btn outline-btn small-btn mt-auto">Start Learning</a>
+      </div>
+    `).join("");
+  } else {
+    resourcesEl.innerHTML = "<p class='muted'>No additional resources needed at this stage.</p>";
+  }
+})();
 </script>
 </body>
 </html>
