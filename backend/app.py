@@ -14,6 +14,7 @@ from docx import Document
 
 from recommender import analyze_profile, load_data
 import interview_ai
+import ats_optimizer
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -90,6 +91,12 @@ def certifications():
 def companies():
     return send_from_directory(FRONTEND_DIR, "jobs.html")
 
+@app.route("/ats-optimizer")
+@app.route("/ats")
+@app.route("/resume-optimizer")
+def ats_page():
+    return send_from_directory(FRONTEND_DIR, "ats.html")
+
 @app.get("/api/health")
 def health():
     return jsonify({"status": "ok", "service": "SkillBridge AI"})
@@ -138,6 +145,43 @@ def analyze():
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink(missing_ok=True)
+
+@app.post("/api/ats/analyze")
+def ats_analyze_api():
+    data = request.form.to_dict()
+    resume_text = data.get("resume_text", "")
+    job_description = data.get("job_description", "")
+    target_role = data.get("target_role", "Software Engineer")
+    resume_file = request.files.get("resume")
+
+    temp_path = None
+    try:
+        if resume_file and resume_file.filename:
+            if not allowed_file(resume_file.filename):
+                return jsonify({"error": "Only PDF and DOCX resumes are supported."}), 400
+
+            filename = f"ats_{uuid.uuid4().hex}_{secure_filename(resume_file.filename)}"
+            temp_path = UPLOAD_DIR / filename
+            resume_file.save(temp_path)
+            extracted = extract_resume(temp_path)
+            resume_text = (extracted + "\n" + resume_text).strip()
+
+        if not resume_text:
+            return jsonify({"error": "Please upload a resume or paste your resume text."}), 400
+
+        result = ats_optimizer.analyze_ats(
+            resume_text=resume_text,
+            job_description=job_description,
+            target_role=target_role
+        )
+        if "error" in result:
+            return jsonify({"error": result["error"]}), 400
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": f"ATS Analysis error: {str(e)}"}), 500
     finally:
         if temp_path and temp_path.exists():
             temp_path.unlink(missing_ok=True)
