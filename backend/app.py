@@ -94,9 +94,8 @@ def admin_required(f):
 # INITIALIZATION (Seeding & Default Admin Creation)
 # ==========================================================
 def init_admin():
-    """Create default administrator account if none exists."""
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@skillbridge.ai").strip().lower()
-    admin_password = os.getenv("ADMIN_PASSWORD", "AdminPassword123!")
+    admin_email = os.getenv("ADMIN_EMAIL").strip().lower()
+    admin_password = os.getenv("ADMIN_PASSWORD")
 
     database = db.get_db()
     if database is not None:

@@ -88,8 +88,6 @@ Create a `.env` file in the project root (copied from `.env.example`):
 | :--- | :--- | :--- |
 | `MONGO_URI` | MongoDB Atlas connection string | `mongodb+srv://<user>:<password>@cluster0.mongodb.net/skillbridge_ai?retryWrites=true&w=majority` |
 | `SECRET_KEY` | Flask session secret key | `super_secure_random_string_32_chars` |
-| `ADMIN_EMAIL` | Default administrator email | `admin@skillbridge.ai` |
-| `ADMIN_PASSWORD` | Default administrator password | `AdminPassword123!` |
 | `PORT` | Local or production port | `5001` |
 
 ---
