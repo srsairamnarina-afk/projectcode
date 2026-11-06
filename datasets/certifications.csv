@@ -1,0 +1,14 @@
+certification_id,job_role,certification,provider,level,url
+C001,Data Scientist,IBM Data Science Professional Certificate,IBM,Beginner,https://www.coursera.org/professional-certificates/ibm-data-science
+C002,Data Scientist,Microsoft Certified: Azure Data Scientist Associate,Microsoft,Intermediate,https://learn.microsoft.com/credentials/certifications/azure-data-scientist/
+C003,Software Engineer,Oracle Java SE Certification,Oracle,Intermediate,https://education.oracle.com/java-certification/
+C004,Web Developer,Meta Front-End Developer Professional Certificate,Meta,Beginner,https://www.coursera.org/professional-certificates/meta-front-end-developer
+C005,Frontend Developer,Meta Front-End Developer Professional Certificate,Meta,Beginner,https://www.coursera.org/professional-certificates/meta-front-end-developer
+C006,Backend Developer,Meta Back-End Developer Professional Certificate,Meta,Beginner,https://www.coursera.org/professional-certificates/meta-back-end-developer
+C007,Cloud Engineer,AWS Certified Cloud Practitioner,AWS,Beginner,https://aws.amazon.com/certification/certified-cloud-practitioner/
+C008,DevOps Engineer,AWS Certified DevOps Engineer - Professional,AWS,Advanced,https://aws.amazon.com/certification/certified-devops-engineer-professional/
+C009,Cybersecurity Analyst,CompTIA Security+,CompTIA,Intermediate,https://www.comptia.org/certifications/security
+C010,Data Analyst,Google Data Analytics Professional Certificate,Google,Beginner,https://www.coursera.org/professional-certificates/google-data-analytics
+C011,Machine Learning Engineer,Google Professional Machine Learning Engineer,Google Cloud,Advanced,https://cloud.google.com/learn/certification/machine-learning-engineer
+C012,UI/UX Designer,Google UX Design Professional Certificate,Google,Beginner,https://www.coursera.org/professional-certificates/google-ux-design
+C013,ServiceNow Developer,ServiceNow Certified System Administrator,ServiceNow,Beginner,https://www.servicenow.com/services/training-and-certification.html

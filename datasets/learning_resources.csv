@@ -1,0 +1,33 @@
+resource_id,skill,resource_name,provider,resource_type,url
+R001,python,Python for Everybody,Coursera,Course,https://www.coursera.org/specializations/python
+R002,pandas,Pandas Documentation,Pandas,Documentation,https://pandas.pydata.org/docs/
+R003,numpy,NumPy Learn,NumPy,Documentation,https://numpy.org/learn/
+R004,statistics,Statistics with Python,Coursera,Course,https://www.coursera.org/specializations/statistics-with-python
+R005,machine learning,Machine Learning Specialization,DeepLearning.AI,Course,https://www.coursera.org/specializations/machine-learning-introduction
+R006,sql,SQLBolt,SQLBolt,Practice,https://sqlbolt.com/
+R007,data visualization,Data Visualization with Tableau,Coursera,Course,https://www.coursera.org/learn/data-visualization
+R008,java,Java Programming,Oracle,Learning Path,https://dev.java/learn/
+R009,data structures,Data Structures and Algorithms,GeeksforGeeks,Practice,https://www.geeksforgeeks.org/data-structures/
+R010,algorithms,Algorithms,MIT OpenCourseWare,Course,https://ocw.mit.edu/search/?q=algorithms
+R011,git,Git Documentation,Git,Documentation,https://git-scm.com/doc
+R012,html,MDN HTML,MDN,Documentation,https://developer.mozilla.org/en-US/docs/Web/HTML
+R013,css,MDN CSS,MDN,Documentation,https://developer.mozilla.org/en-US/docs/Web/CSS
+R014,javascript,JavaScript Guide,MDN,Documentation,https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide
+R015,react,React Learn,React,Documentation,https://react.dev/learn
+R016,node.js,Node.js Learn,Node.js,Documentation,https://nodejs.org/en/learn
+R017,rest api,REST API Tutorial,REST API,Tutorial,https://restfulapi.net/
+R018,linux,Linux Journey,Linux Journey,Course,https://linuxjourney.com/
+R019,networking,Networking Basics,Cisco Networking Academy,Course,https://www.netacad.com/courses/networking
+R020,aws,AWS Skill Builder,AWS,Learning Platform,https://skillbuilder.aws/
+R021,docker,Docker Get Started,Docker,Documentation,https://docs.docker.com/get-started/
+R022,ci/cd,GitHub Actions Documentation,GitHub,Documentation,https://docs.github.com/actions
+R023,cybersecurity fundamentals,Cybersecurity Learning,Cisco,Learning Path,https://www.cisco.com/site/us/en/learn/training-certifications/cybersecurity/index.html
+R024,siem,SIEM Learning,Microsoft,Learning Path,https://learn.microsoft.com/training/
+R025,incident response,Incident Response Guide,NIST,Guide,https://csrc.nist.gov/publications
+R026,excel,Excel Training,Microsoft,Learning Path,https://support.microsoft.com/excel
+R027,power bi,Power BI Learning,Microsoft,Learning Platform,https://learn.microsoft.com/training/powerplatform/power-bi/
+R028,figma,Figma Learn,Figma,Learning Platform,https://help.figma.com/hc/en-us/categories/360002051613
+R029,user research,UX Research,Google,Learning,https://grow.google/certificates/ux-design/
+R030,servicenow,ServiceNow Developer Training,ServiceNow,Learning Platform,https://developer.servicenow.com/dev.do
+R031,it service management,IT Service Management,ServiceNow,Learning,https://www.servicenow.com/products/itsm.html
+R032,workflow,ServiceNow Developer Learning,ServiceNow,Learning,https://developer.servicenow.com/dev.do

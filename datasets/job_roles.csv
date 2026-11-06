@@ -1,0 +1,13 @@
+job_id,job_role,category,required_skills,optional_skills,experience_level
+JR001,Data Scientist,Data & AI,python|pandas|numpy|statistics|machine learning|sql|data visualization,scikit-learn|tensorflow|power bi,Fresher / Junior
+JR002,Software Engineer,Software Development,python|java|data structures|algorithms|sql|git|object oriented programming,docker|rest api|cloud,Fresher / Junior
+JR003,Web Developer,Web Development,html|css|javascript|git|responsive design,react|node.js|typescript|rest api,Fresher / Junior
+JR004,Frontend Developer,Web Development,html|css|javascript|react|git|responsive design,typescript|testing|figma,Fresher / Junior
+JR005,Backend Developer,Software Development,python|java|sql|rest api|git|database,docker|node.js|redis|cloud,Junior
+JR006,Cloud Engineer,Cloud & DevOps,linux|networking|aws|docker|git|cloud fundamentals,kubernetes|terraform|python|ci/cd,Junior
+JR007,DevOps Engineer,Cloud & DevOps,linux|git|docker|ci/cd|cloud fundamentals|scripting,kubernetes|terraform|ansible|monitoring,Junior
+JR008,Cybersecurity Analyst,Cybersecurity,networking|linux|cybersecurity fundamentals|siem|python|incident response,ethical hacking|cloud security|splunk,Junior
+JR009,Data Analyst,Data & Analytics,sql|excel|python|pandas|statistics|data visualization,power bi|tableau|machine learning,Fresher / Junior
+JR010,Machine Learning Engineer,Data & AI,python|numpy|pandas|machine learning|statistics|sql|git,tensorflow|pytorch|docker|mlops,Junior
+JR011,UI/UX Designer,Design,figma|user research|wireframing|prototyping|visual design,usability testing|design systems|html|css,Fresher / Junior
+JR012,ServiceNow Developer,Enterprise IT,servicenow|javascript|sql|it service management|workflow|rest api,service portal|integration hub|business rules,Fresher / Junior

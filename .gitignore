@@ -1,0 +1,29 @@
+# Virtual environments
+.venv/
+.venv_py312/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# User uploads
+uploads/*
+!uploads/.gitkeep
+
+# macOS / OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db

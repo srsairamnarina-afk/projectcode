@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge AI | Administrator Portal</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/nav.js"></script>
+  <style>
+    .admin-container {
+      max-width: 1250px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .admin-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 25px;
+      overflow-x: auto;
+    }
+    .admin-tab {
+      padding: 12px 20px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .admin-tab:hover {
+      color: var(--primary);
+    }
+    .admin-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-box .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .stat-box .number {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 5px;
+    }
+    .data-table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+    }
+    th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .action-btn:hover { opacity: 0.85; }
+    .btn-delete { background: #fee2e2; color: #dc2626; }
+    .btn-toggle { background: #e0f2fe; color: #0284c7; }
+    .btn-promote { background: #fef3c7; color: #b45309; }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      padding: 30px;
+      box-shadow: var(--shadow-lg);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-admin { background: #ede9fe; color: #7c3aed; }
+    .badge-user { background: #f1f5f9; color: #475569; }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-inactive { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+
+<div class="admin-container">
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+    <div>
+      <span class="badge badge-admin" style="font-size: 13px; padding: 4px 10px;">Administrator Mode</span>
+      <h2 style="margin-top: 8px;">Platform Administration Portal</h2>
+      <p class="subtitle">Manage job roles, learning datasets, system users, and track platform metrics.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="/api/admin/export-roles-csv" class="btn outline-btn" download="job_roles.csv">📥 Export Roles CSV</a>
+      <a href="/" class="btn secondary">Back to App</a>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="admin-nav">
+    <div class="admin-tab active" onclick="switchTab('stats')">📊 System Overview</div>
+    <div class="admin-tab" onclick="switchTab('roles')">💼 Job Roles</div>
+    <div class="admin-tab" onclick="switchTab('certs')">📜 Certifications</div>
+    <div class="admin-tab" onclick="switchTab('resources')">📚 Learning Resources</div>
+    <div class="admin-tab" onclick="switchTab('users')">👥 User Accounts</div>
+  </div>
+
+  <!-- TAB 1: OVERVIEW & STATS -->
+  <div id="tab-stats" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="title">Total Users</div>
+        <div class="number" id="adm-stat-users">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="title">Total Analyses Run</div>
+        <div class="number" id="adm-stat-analyses">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="title">Average Readiness Score</div>
+        <div class="number" id="adm-stat-avg">0%</div>
+      </div>
+      <div class="stat-box">
+        <div class="title">Active Roles In System</div>
+        <div class="number" id="adm-stat-roles-count">0</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px; margin-bottom: 30px;">
+      <div class="stat-box">
+        <h4 style="margin-bottom: 15px;">Most In-Demand Target Roles</h4>
+        <div style="height: 250px;">
+          <canvas id="topRolesChart"></canvas>
+        </div>
+      </div>
+      <div class="stat-box">
+        <h4 style="margin-bottom: 15px;">Most Common Student Missing Skills</h4>
+        <div style="height: 250px;">
+          <canvas id="topMissingChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: JOB ROLES MANAGEMENT -->
+  <div id="tab-roles" class="tab-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3>Catalog of Job Roles</h3>
+      <button class="btn primary small-btn" onclick="openModal('roleModal')">+ Add New Job Role</button>
+    </div>
+
+    <div class="data-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Role Title</th>
+            <th>Category</th>
+            <th>Required Skills</th>
+            <th>Optional Skills</th>
+            <th>Level</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="rolesTableBody">
+          <tr><td colspan="7" style="text-align: center;">Loading job roles...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: CERTIFICATIONS -->
+  <div id="tab-certs" class="tab-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3>Role Certifications</h3>
+      <button class="btn primary small-btn" onclick="openModal('certModal')">+ Add Certification</button>
+    </div>
+
+    <div class="data-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Target Role</th>
+            <th>Certification Name</th>
+            <th>Provider</th>
+            <th>Level</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="certsTableBody">
+          <tr><td colspan="6" style="text-align: center;">Loading certifications...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 4: LEARNING RESOURCES -->
+  <div id="tab-resources" class="tab-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3>Learning Resources Dataset</h3>
+      <button class="btn primary small-btn" onclick="openModal('resourceModal')">+ Add Learning Resource</button>
+    </div>
+
+    <div class="data-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Target Skill</th>
+            <th>Resource Title</th>
+            <th>Provider</th>
+            <th>Type</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="resourcesTableBody">
+          <tr><td colspan="6" style="text-align: center;">Loading resources...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: USER ACCOUNTS -->
+  <div id="tab-users" class="tab-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3>Platform Users & Roles</h3>
+    </div>
+
+    <div class="data-table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Email Address</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Analyses</th>
+            <th>Created</th>
+            <th>Manage</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr><td colspan="7" style="text-align: center;">Loading user accounts...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: ADD JOB ROLE -->
+<div class="modal-overlay" id="roleModal">
+  <div class="modal-content">
+    <h3>Add New Job Role</h3>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 5px 0 20px;">Define core requirements for students to evaluate against.</p>
+    <form id="addRoleForm">
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Job Role Title *</label>
+        <input type="text" id="role_title" placeholder="e.g. Cloud Security Specialist" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Category</label>
+        <input type="text" id="role_cat" placeholder="e.g. Cybersecurity & Cloud" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Required Skills (comma-separated) *</label>
+        <textarea id="role_req_skills" rows="2" placeholder="python, aws, networking, siem" required></textarea>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Optional Skills (comma-separated)</label>
+        <textarea id="role_opt_skills" rows="2" placeholder="docker, kubernetes, linux"></textarea>
+      </div>
+      <div class="field" style="margin-bottom: 20px;">
+        <label>Experience Level</label>
+        <select id="role_level">
+          <option value="Fresher / Junior">Fresher / Junior</option>
+          <option value="Junior">Junior</option>
+          <option value="Mid / Senior">Mid / Senior</option>
+        </select>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn outline-btn" onclick="closeModal('roleModal')">Cancel</button>
+        <button type="submit" class="btn primary">Save Role</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD CERTIFICATION -->
+<div class="modal-overlay" id="certModal">
+  <div class="modal-content">
+    <h3>Add Role Certification</h3>
+    <form id="addCertForm">
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Target Job Role *</label>
+        <input type="text" id="cert_role" placeholder="e.g. Data Scientist" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Certification Name *</label>
+        <input type="text" id="cert_name" placeholder="e.g. AWS Certified Developer" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Provider</label>
+        <input type="text" id="cert_prov" placeholder="e.g. Amazon Web Services" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Level</label>
+        <select id="cert_lvl">
+          <option value="Beginner">Beginner</option>
+          <option value="Intermediate">Intermediate</option>
+          <option value="Advanced">Advanced</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom: 20px;">
+        <label>Official URL</label>
+        <input type="url" id="cert_url" placeholder="https://..." value="https://">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn outline-btn" onclick="closeModal('certModal')">Cancel</button>
+        <button type="submit" class="btn primary">Save Certification</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD RESOURCE -->
+<div class="modal-overlay" id="resourceModal">
+  <div class="modal-content">
+    <h3>Add Learning Resource</h3>
+    <form id="addResForm">
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Target Skill *</label>
+        <input type="text" id="res_skill" placeholder="e.g. docker" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Resource Title *</label>
+        <input type="text" id="res_title" placeholder="e.g. Docker Bootcamp 2026" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Provider</label>
+        <input type="text" id="res_prov" placeholder="e.g. Coursera / Documentation" required>
+      </div>
+      <div class="field" style="margin-bottom: 15px;">
+        <label>Type</label>
+        <select id="res_type">
+          <option value="Course">Course</option>
+          <option value="Documentation">Documentation</option>
+          <option value="Practice">Practice</option>
+          <option value="Tutorial">Tutorial</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom: 20px;">
+        <label>URL</label>
+        <input type="url" id="res_url" placeholder="https://..." value="https://">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn outline-btn" onclick="closeModal('resourceModal')">Cancel</button>
+        <button type="submit" class="btn primary">Save Resource</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer>SkillBridge AI • Administrative Control Engine</footer>
+
+<script>
+  let rolesChart = null;
+  let missingChart = null;
+
+  function switchTab(name) {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+
+    if (name === 'roles') loadRoles();
+    if (name === 'certs') loadCertifications();
+    if (name === 'resources') loadResources();
+    if (name === 'users') loadUsers();
+    if (name === 'stats') loadStats();
+  }
+
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  // Check admin session security
+  async function checkAdminAuth() {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (!data.logged_in || data.user.role !== 'admin') {
+        alert("Access restricted to administrators.");
+        window.location.href = '/login';
+      }
+    } catch (e) {
+      window.location.href = '/login';
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/admin/stats');
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
+      const data = await res.json();
+
+      document.getElementById('adm-stat-users').textContent = data.total_users;
+      document.getElementById('adm-stat-analyses').textContent = data.total_analyses;
+      document.getElementById('adm-stat-avg').textContent = data.average_readiness + '%';
+
+      // Charts
+      renderCharts(data.top_roles, data.top_missing_skills);
+    } catch(err) {}
+  }
+
+  function renderCharts(roles, missing) {
+    const rolesCtx = document.getElementById('topRolesChart').getContext('2d');
+    const missingCtx = document.getElementById('topMissingChart').getContext('2d');
+
+    if (rolesChart) rolesChart.destroy();
+    if (missingChart) missingChart.destroy();
+
+    const rLabels = (roles && roles.length) ? roles.map(r => r.role) : ['Software Engineer', 'Data Analyst', 'Cloud Engineer'];
+    const rCounts = (roles && roles.length) ? roles.map(r => r.count) : [5, 3, 2];
+
+    rolesChart = new Chart(rolesCtx, {
+      type: 'bar',
+      data: {
+        labels: rLabels,
+        datasets: [{
+          label: 'Times Evaluated',
+          data: rCounts,
+          backgroundColor: '#3b82f6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    const mLabels = (missing && missing.length) ? missing.map(m => m.skill) : ['docker', 'kubernetes', 'aws'];
+    const mCounts = (missing && missing.length) ? missing.map(m => m.count) : [8, 6, 5];
+
+    missingChart = new Chart(missingCtx, {
+      type: 'bar',
+      data: {
+        labels: mLabels,
+        datasets: [{
+          label: 'Frequency',
+          data: mCounts,
+          backgroundColor: '#ef4444',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  async function loadRoles() {
+    try {
+      const res = await fetch('/api/admin/roles');
+      const roles = await res.json();
+      document.getElementById('adm-stat-roles-count').textContent = roles.length;
+      
+      const tbody = document.getElementById('rolesTableBody');
+      if (!roles || roles.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No roles configured.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = roles.map(r => `
+        <tr>
+          <td><strong>${r.job_id || '--'}</strong></td>
+          <td><strong>${r.job_role}</strong></td>
+          <td>${r.category || 'General'}</td>
+          <td style="max-width: 250px; font-size: 12px; color: var(--text-muted);">${(r.required_skills || '').replace(/\|/g, ', ')}</td>
+          <td style="max-width: 200px; font-size: 12px; color: var(--text-muted);">${(r.optional_skills || '').replace(/\|/g, ', ')}</td>
+          <td>${r.experience_level || 'Fresher'}</td>
+          <td>
+            <button class="action-btn btn-delete" onclick="deleteRole('${r.job_id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch(e) {}
+  }
+
+  async function deleteRole(roleId) {
+    if (!confirm(`Delete role ${roleId}?`)) return;
+    const res = await fetch(`/api/admin/roles/${roleId}`, { method: 'DELETE' });
+    if (res.ok) loadRoles();
+  }
+
+  document.getElementById('addRoleForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      job_role: document.getElementById('role_title').value,
+      category: document.getElementById('role_cat').value,
+      required_skills: document.getElementById('role_req_skills').value,
+      optional_skills: document.getElementById('role_opt_skills').value,
+      experience_level: document.getElementById('role_level').value
+    };
+    const res = await fetch('/api/admin/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      closeModal('roleModal');
+      document.getElementById('addRoleForm').reset();
+      loadRoles();
+    }
+  });
+
+  async function loadCertifications() {
+    const res = await fetch('/api/admin/certifications');
+    const certs = await res.json();
+    const tbody = document.getElementById('certsTableBody');
+    tbody.innerHTML = certs.map(c => `
+      <tr>
+        <td>${c.certification_id || '--'}</td>
+        <td><strong>${c.job_role}</strong></td>
+        <td>${c.certification}</td>
+        <td>${c.provider}</td>
+        <td>${c.level}</td>
+        <td><button class="action-btn btn-delete" onclick="deleteCert('${c.certification_id}')">Delete</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function deleteCert(id) {
+    if (!confirm('Delete this certification?')) return;
+    const res = await fetch(`/api/admin/certifications/${id}`, { method: 'DELETE' });
+    if (res.ok) loadCertifications();
+  }
+
+  document.getElementById('addCertForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      job_role: document.getElementById('cert_role').value,
+      certification: document.getElementById('cert_name').value,
+      provider: document.getElementById('cert_prov').value,
+      level: document.getElementById('cert_lvl').value,
+      url: document.getElementById('cert_url').value
+    };
+    const res = await fetch('/api/admin/certifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      closeModal('certModal');
+      document.getElementById('addCertForm').reset();
+      loadCertifications();
+    }
+  });
+
+  async function loadResources() {
+    const res = await fetch('/api/admin/resources');
+    const items = await res.json();
+    const tbody = document.getElementById('resourcesTableBody');
+    tbody.innerHTML = items.map(r => `
+      <tr>
+        <td>${r.resource_id || '--'}</td>
+        <td><span class="badge badge-admin">${r.skill}</span></td>
+        <td><strong>${r.resource_name}</strong></td>
+        <td>${r.provider}</td>
+        <td>${r.resource_type}</td>
+        <td><button class="action-btn btn-delete" onclick="deleteResource('${r.resource_id}')">Delete</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function deleteResource(id) {
+    if (!confirm('Delete this learning resource?')) return;
+    const res = await fetch(`/api/admin/resources/${id}`, { method: 'DELETE' });
+    if (res.ok) loadResources();
+  }
+
+  document.getElementById('addResForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      skill: document.getElementById('res_skill').value,
+      resource_name: document.getElementById('res_title').value,
+      provider: document.getElementById('res_prov').value,
+      resource_type: document.getElementById('res_type').value,
+      url: document.getElementById('res_url').value
+    };
+    const res = await fetch('/api/admin/resources', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      closeModal('resourceModal');
+      document.getElementById('addResForm').reset();
+      loadResources();
+    }
+  });
+
+  async function loadUsers() {
+    const res = await fetch('/api/admin/users');
+    const users = await res.json();
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><strong>${u.full_name || 'Anonymous'}</strong></td>
+        <td>${u.email}</td>
+        <td><span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role}</span></td>
+        <td><span class="badge ${u.is_active !== false ? 'badge-active' : 'badge-inactive'}">${u.is_active !== false ? 'Active' : 'Deactivated'}</span></td>
+        <td><strong>${u.analyses_count || 0}</strong></td>
+        <td>${u.created_at_str || 'Recent'}</td>
+        <td style="display: flex; gap: 6px;">
+          <button class="action-btn btn-toggle" onclick="toggleUserStatus('${u._id}')">
+            ${u.is_active !== false ? 'Deactivate' : 'Activate'}
+          </button>
+          <button class="action-btn btn-promote" onclick="toggleUserRole('${u._id}')">
+            ${u.role === 'admin' ? 'Demote User' : 'Make Admin'}
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function toggleUserStatus(uid) {
+    const res = await fetch(`/api/admin/users/${uid}/toggle-status`, { method: 'POST' });
+    if (res.ok) loadUsers();
+  }
+
+  async function toggleUserRole(uid) {
+    const res = await fetch(`/api/admin/users/${uid}/toggle-role`, { method: 'POST' });
+    if (res.ok) loadUsers();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    checkAdminAuth();
+    loadStats();
+    loadRoles();
+  });
+</script>
+
+</body>
+</html>

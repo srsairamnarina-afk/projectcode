@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge AI | Certifications</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/nav.js"></script>
+  <script src="/js/career-data.js"></script>
+</head>
+<body>
+<main class="results-page">
+  <div class="section-heading text-center" style="margin-top: 20px;">
+    <p class="eyebrow">STEP 3: VALIDATION</p>
+    <h1 class="gradient-text">Recommended Certifications</h1>
+    <p class="subtitle">Validate your skills to stand out to employers hiring for <strong id="roleTitle">...</strong> <a href="/skill-analyzer" style="font-size: 13px; margin-left: 8px; color: var(--primary); text-decoration: underline;">(Change / Upload Resume)</a></p>
+  </div>
+
+  <section class="result-card glass-panel full-width">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+      <h2 style="margin: 0;">🎓 Official Certifications</h2>
+      <div>
+        <select id="certFilter" style="width: auto; padding: 8px 12px; font-size: 14px;">
+          <option value="all">All Certifications</option>
+          <option value="beginner">Beginner Level</option>
+          <option value="intermediate">Intermediate Level</option>
+          <option value="advanced">Advanced Level</option>
+        </select>
+      </div>
+    </div>
+    
+    <div id="certifications" class="resource-grid">Loading official industry certifications...</div>
+  </section>
+
+  <div class="text-center" style="margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+    <a href="/learning-roadmap" class="btn outline-btn btn-large">← Back to Roadmap</a>
+    <a href="/companies" class="btn primary btn-large">View Companies & Jobs →</a>
+  </div>
+</main>
+
+<script>
+(async function init() {
+  const data = await getCareerData();
+
+  document.getElementById("roleTitle").textContent = data.job_role;
+
+  let allCerts = data.certifications || [];
+  const certContainer = document.getElementById("certifications");
+
+  function renderCerts(filter = "all") {
+    let filtered = allCerts;
+    if (filter !== "all") {
+      filtered = allCerts.filter(c => (c.level || "").toLowerCase() === filter.toLowerCase());
+    }
+
+    if (!filtered || filtered.length === 0) {
+      certContainer.innerHTML = "<p class='muted'>No certifications matching this criteria for this role.</p>";
+      return;
+    }
+
+    certContainer.innerHTML = filtered.map(c => `
+      <div class="resource-box">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <span class="badge">${escapeHtml(c.level || 'Standard')}</span>
+          <span style="font-size: 12px; font-weight: bold; color: var(--primary); background: rgba(37,99,235,0.1); padding: 4px 8px; border-radius: 4px;">Recommended</span>
+        </div>
+        <h3 style="margin-top: 10px;">${escapeHtml(c.certification)}</h3>
+        <p class="provider">🏢 ${escapeHtml(c.provider)}</p>
+        <a href="${c.url}" target="_blank" rel="noopener noreferrer" class="btn primary small-btn mt-auto">View Certification</a>
+      </div>
+    `).join("");
+  }
+
+  renderCerts();
+
+  document.getElementById("certFilter").addEventListener("change", (e) => {
+    renderCerts(e.target.value);
+  });
+})();
+</script>
+</body>
+</html>
